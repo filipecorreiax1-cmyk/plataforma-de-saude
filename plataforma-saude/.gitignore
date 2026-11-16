@@ -1,0 +1,22 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Arquivos de segurança
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
