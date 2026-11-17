@@ -9,7 +9,8 @@
     "dev": "nodemon backend/src/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "test": "node --test"
+    "test": "node --test",
+    "admin:create": "node backend/src/create-admin.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
