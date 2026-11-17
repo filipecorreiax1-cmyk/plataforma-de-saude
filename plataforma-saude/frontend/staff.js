@@ -16,7 +16,7 @@ if(currentUser.role==="ADMIN"){
  }
 }
 if(currentUser.role==="NURSE")$("#vaccine-area").hidden=false;
-if(currentUser.role==="ADMIN")$("#vaccine-area").hidden=false;
+if(currentUser.role==="ADMIN"&&currentUser.twoFactorOn)$("#vaccine-area").hidden=false;
 }catch{location.replace("/?login=required")}}
 $("#logout").onclick=async()=>{try{await api("/api/auth/logout",{method:"POST"})}finally{location.replace("/")}};
 async function loadDoctorAppointments(){const d=await api("/api/appointments");$("#doctor-appointments").innerHTML=d.appointments.length?d.appointments.map(a=>'<article class="appointment-row"><b>'+esc(a.patient?.name||"Paciente")+'</b><p>'+new Date(a.startsAt).toLocaleString("pt-BR")+' · '+esc(a.specialty)+' · '+esc(a.unit)+'</p><p>CPF: '+esc(a.patient?.cpf||"—")+' · Cartão SUS: '+esc(a.patient?.susCard||"—")+'</p><p>Telefone: '+esc(a.patient?.phone||"—")+' · Status: '+esc(a.status)+'</p></article>').join(""):"<p>Nenhum atendimento vinculado à sua agenda.</p>"}
