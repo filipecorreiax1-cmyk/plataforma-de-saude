@@ -6,7 +6,7 @@ app.disable("x-powered-by");app.set("trust proxy",1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==="production"&&req.get("x-forwarded-proto")!=="https")return res.redirect(308,"https://"+req.get("host")+req.originalUrl);next()});
 app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));app.use(express.static(path.join(__dirname,"../../frontend")));
 const {cpfOk,cpfMask,susMask}=require("./validation");
-const safe=u=>({id:u.id,name:u.name,email:u.email,role:u.role,cpf:cpfMask(u.cpf),susCard:susMask(u.susCard),phone:u.phone});
+const safe=u=>({id:u.id,name:u.name,email:u.email,role:u.role,cpf:cpfMask(u.cpf),susCard:susMask(u.susCard),phone:u.phone,twoFactorOn:u.twoFactorOn});
 const token=u=>jwt.sign({sub:u.id},SECRET,{expiresIn:"8h",issuer:"saude",audience:"portal"});
 const auth=()=>async(req,res,next)=>{try{const t=req.cookies.saude_session||(req.headers.authorization||"").replace(/^Bearer /i,"");if(!t)return res.status(401).json({error:"Faça login para continuar."});const p=jwt.verify(t,SECRET,{issuer:"saude",audience:"portal"});const u=await prisma.user.findUnique({where:{id:p.sub}});if(!u||!u.active)return res.status(401).json({error:"Sessão inválida."});req.user=u;next()}catch{return res.status(401).json({error:"Sessão expirada ou inválida."})}};
 const roles=(...r)=>(req,res,next)=>{
