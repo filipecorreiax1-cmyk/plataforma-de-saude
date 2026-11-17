@@ -35,6 +35,20 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  res.json({message:"Autenticação em duas etapas ativada."});
 });
 app.get("/api/staff/doctors",async(q,s)=>{const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/admin/staff",auth(),roles("ADMIN"),async(q,s)=>{
+ const staff=await prisma.user.findMany({where:{role:{in:["DOCTOR","NURSE","ADMIN"]}},select:{id:true,name:true,email:true,role:true,active:true,twoFactorOn:true},orderBy:{name:"asc"}});
+ s.json({staff});
+});
+app.post("/api/admin/staff",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({name:z.string().trim().min(3).max(100),email:z.string().email(),cpf:cpfSchema,phone:z.string().min(10).max(20),password:z.string().min(12).max(72),role:z.enum(["DOCTOR","NURSE"])}).parse(req.body);
+  const email=d.email.toLowerCase();
+  if(await prisma.user.findFirst({where:{OR:[{email},{cpf:d.cpf}]}}))return res.status(409).json({error:"E-mail ou CPF já cadastrado."});
+  const u=await prisma.user.create({data:{name:d.name,email,cpf:d.cpf,phone:d.phone,passwordHash:await bcrypt.hash(d.password,12),role:d.role}});
+  await log(req.user.id,"STAFF_CREATED","User",u.id);
+  res.status(201).json({staff:{id:u.id,name:u.name,email:u.email,role:u.role,twoFactorOn:false},message:"Profissional cadastrado. Configure o 2FA antes de liberar o acesso."});
+ }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível cadastrar o profissional."})}
+});
 app.get("/api/appointments",auth(),async(req,res)=>{const where=req.user.role==="PATIENT"?{patientId:req.user.id}:req.user.role==="DOCTOR"?{doctorId:req.user.id}:{};const rows=await prisma.appointment.findMany({where,include:{patient:{select:{id:true,name:true,cpf:true,susCard:true,phone:true}},doctor:{select:{name:true}}},orderBy:{startsAt:"asc"}});res.json({appointments:rows.map(a=>({id:a.id,startsAt:a.startsAt,specialty:a.specialty,unit:a.unit,status:a.status,doctor:a.doctor.name,patient:req.user.role==="PATIENT"?undefined:{id:a.patient.id,name:a.patient.name,cpf:cpfMask(a.patient.cpf),susCard:susMask(a.patient.susCard),phone:a.patient.phone}}))})});
 app.post("/api/appointments",auth(),roles("PATIENT"),async(req,res)=>{try{const d=z.object({doctorId:z.string().uuid(),startsAt:z.string().datetime(),specialty:z.string().min(2).max(80),unit:z.string().min(2).max(120)}).parse(req.body);const date=new Date(d.startsAt);if(date<=new Date())return res.status(400).json({error:"Escolha um horário futuro."});if(!await prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true}}))return res.status(404).json({error:"Profissional não encontrado."});const a=await prisma.appointment.create({data:{patientId:req.user.id,doctorId:d.doctorId,startsAt:date,specialty:d.specialty,unit:d.unit}});await log(req.user.id,"APPOINTMENT_CREATED","Appointment",a.id);res.status(201).json({appointment:a})}catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Horário indisponível. Escolha outro.":e.errors?.[0]?.message||"Não foi possível agendar."})}});
 app.patch("/api/appointments/:id/cancel",auth(),async(req,res)=>{const a=await prisma.appointment.findUnique({where:{id:req.params.id}});if(!a)return res.status(404).json({error:"Agendamento não encontrado."});if(req.user.role==="PATIENT"&&a.patientId!==req.user.id)return res.status(403).json({error:"Você não pode alterar este agendamento."});if(!["PATIENT","ADMIN"].includes(req.user.role))return res.status(403).json({error:"Ação não permitida."});if(a.status!=="SCHEDULED")return res.status(409).json({error:"Agendamento não está ativo."});const updated=await prisma.appointment.update({where:{id:a.id},data:{status:"CANCELLED",cancelledAt:new Date()}});await log(req.user.id,"APPOINTMENT_CANCELLED","Appointment",a.id);res.json({appointment:updated})});
