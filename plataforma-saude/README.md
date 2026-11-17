@@ -1,37 +1,49 @@
 # Plataforma de Saúde
 
-Portal mobile-first para aproximar a população dos serviços da atenção básica: cadastro do cidadão, agendamento e cancelamento, vacinas e calendário municipal.
+Portal mobile-first para aproximar a população dos serviços da atenção básica: cadastro, agendamento e cancelamento de consultas, consulta de vacinas e calendário municipal.
 
 ## Estrutura
-- `frontend/`: interface responsiva, semântica e acessível.
+- `frontend/`: interface responsiva e acessível.
 - `backend/src/server.js`: API Express, autenticação e autorização.
-- `backend/prisma/schema.prisma`: modelos PostgreSQL, relações e restrições de integridade.
+- `backend/prisma/schema.prisma`: PostgreSQL, usuários, profissionais, consultas, horários, vacinas, campanhas e auditoria.
 
-## Executar localmente
+## Instalação local
 1. Instale Node.js 20+ e PostgreSQL.
 2. Na pasta `plataforma-saude`, execute `npm install`.
-3. Copie `backend/.env.example` para `.env` e configure `DATABASE_URL` e `JWT_SECRET` (segredo aleatório com pelo menos 32 caracteres).
+3. Copie `backend/.env.example` para `.env` e ajuste `DATABASE_URL`, `JWT_SECRET` (segredo aleatório de pelo menos 32 caracteres) e os dados de bootstrap do administrador.
 4. Execute `npx prisma generate`.
 5. Execute `npx prisma migrate dev --name inicial`.
-6. Execute `npm start` e acesse http://localhost:3000.
+6. Crie o primeiro administrador uma única vez: `npm run admin:create`. Use CPF real válido e senha forte no arquivo de ambiente; depois remova as variáveis ADMIN_* do ambiente.
+7. Execute `npm start` e abra http://localhost:3000.
 
-## Papéis e acesso
-- PATIENT: acessa somente seus próprios agendamentos.
-- DOCTOR: acessa sua agenda e os pacientes com os quais possui atendimento registrado.
-- NURSE: consulta dados mínimos e administra informações de vacinação.
-- ADMIN: administração e provisionamento do segundo fator de profissionais.
+## Fluxo de operação
+- O administrador cadastra profissionais por `POST /api/admin/staff`.
+- O administrador cria horários por `POST /api/admin/slots` (profissional, data/hora, especialidade e unidade).
+- O cidadão consulta os profissionais e horários em aberto, solicita uma vaga e pode cancelar seu próprio agendamento.
+- A equipe de enfermagem/administrador cadastra vacinas em `POST /api/vaccines` e campanhas em `POST /api/immunization-events`.
 
-A autorização é validada no servidor, não apenas na interface. CPF e Cartão SUS são mascarados nas listagens. Prontuário clínico completo não está implementado nesta etapa.
+## Papéis e proteção de dados
+- PATIENT: acessa apenas os próprios agendamentos.
+- DOCTOR: acessa sua agenda e pacientes com atendimento associado ao próprio profissional.
+- NURSE: gerencia vacinas e campanhas; não acessa a listagem geral de pacientes.
+- ADMIN: gerencia profissionais, horários e provisionamento do segundo fator.
+
+A autorização é validada no servidor. CPF e Cartão SUS são mascarados em listagens. Não há prontuário clínico completo nesta etapa. O agendamento utiliza horários previamente cadastrados e bloqueio transacional; a restrição única no banco impede duplicidade por profissional/horário. Cancelamentos liberam o horário novamente.
+
+## Autenticação de profissionais
+O administrador provisiona o TOTP por `POST /api/admin/staff/:id/2fa/setup`; o profissional registra a chave em aplicativo autenticador; o administrador confirma o código por `POST /api/admin/staff/:id/2fa/confirm`. Contas profissionais sem 2FA ativo não conseguem entrar.
+
+## Testes
+- `npm test`: testes automatizados de validação de CPF e mascaramento.
+- Consulte `tests/acceptance.md` para os testes de cadastro, concorrência de horários, autenticação, responsividade e bloqueio de rotas.
 
 ## Segurança e implantação
-Senhas com bcrypt, sessão JWT em cookie HttpOnly/SameSite, limitação de requisições, Helmet, auditoria e TOTP obrigatório para contas profissionais. Um administrador deve provisionar o TOTP por `POST /api/admin/staff/:id/2fa/setup`; o profissional registra a chave em autenticador e o administrador confirma por `POST /api/admin/staff/:id/2fa/confirm`. Não libere contas profissionais antes dessa configuração.
+Em produção, use HTTPS obrigatório, segredo em cofre de segredos, backup criptografado, política de retenção, monitoramento, gestão de incidentes e revisão independente de segurança. Faça avaliação de impacto e validação jurídica da LGPD. Não exponha o banco à internet.
 
-Em produção: HTTPS obrigatório, segredo forte em cofre de segredos, backup criptografado, política de retenção, gestão de incidentes, monitoramento, revisão independente de segurança e avaliação LGPD. Não exponha o banco de dados à internet.
+## Limitações importantes
+Ainda não há integração com sistemas nacionais do SUS, prontuário eletrônico completo, notificações SMS/e-mail, recuperação de senha, painel visual administrativo/profissional, nem sincronização automática do calendário municipal. Os dados de vacinas e campanhas devem ser inseridos por profissionais autorizados e validados pela Secretaria de Saúde.
 
-## Limitações conhecidas
-A agenda ainda precisa de cadastro de profissionais e horários pela administração; nesta versão o cidadão seleciona um profissional e solicita um horário futuro, e a restrição única no banco impede duplicidade por profissional/horário. Vacinas e campanhas dependem de dados oficiais cadastrados pela unidade. Não há integração com sistemas nacionais do SUS, prontuário eletrônico completo, notificações por SMS/e-mail ou fluxo de recuperação de senha.
-
-**Não utilize dados reais nem coloque em produção para atendimento clínico antes de concluir essas funções, realizar testes, configurar o 2FA, validar a LGPD e obter revisão técnica e jurídica.**
+**Esta entrega é uma base de desenvolvimento/MVP e não está pronta para uso clínico com dados reais.** Antes de produção, conclua auditoria de segurança, testes de carga e acessibilidade, revisão jurídica/LGPD, política de consentimento/base legal, backups e validação com a equipe de saúde.
 
 ## Acessibilidade
-Meta: WCAG 2.2 nível AA. A interface já contempla landmarks HTML, link para pular conteúdo, rótulos, foco visível, navegação por teclado, ajuste de fonte e respeito a redução de movimento. Conformidade requer auditoria manual e automatizada em leitores de tela e dispositivos reais.
+Meta: WCAG 2.2 nível AA. Foram incluídos landmarks semânticos, link para pular conteúdo, rótulos de campos, foco visível, teclado, ajuste de fonte e respeito à redução de movimento. A conformidade exige auditoria manual e automatizada com leitores de tela e dispositivos reais.
