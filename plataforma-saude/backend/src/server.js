@@ -3,9 +3,7 @@ const path=require("node:path"),express=require("express"),helmet=require("helme
 const app=express(),prisma=new PrismaClient(),PORT=process.env.PORT||3000,SECRET=process.env.JWT_SECRET;
 if(!SECRET||SECRET.length<32){console.error("Configure JWT_SECRET com ao menos 32 caracteres.");process.exit(1)}
 app.disable("x-powered-by");app.use(helmet({contentSecurityPolicy:false}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));app.use(express.static(path.join(__dirname,"../../frontend")));
-const cpfOk=v=>{const c=String(v||"").replace(/\D/g,"");if(c.length!==11||/^(\d)\1{10}$/.test(c))return false;for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++)s+=+c[i]*(t+1-i);if((s*10)%11%10!==+c[t])return false}return true};
-const cpfMask=v=>v?String(v).replace(/\D/g,"").replace(/^(\d{3})\d+(\d{2})$/,"$1.***.***-$2"):null;
-const susMask=v=>v?"•••• •••• •••• "+String(v).replace(/\D/g,"").slice(-4):null;
+const {cpfOk,cpfMask,susMask}=require("./validation");
 const safe=u=>({id:u.id,name:u.name,email:u.email,role:u.role,cpf:cpfMask(u.cpf),susCard:susMask(u.susCard),phone:u.phone});
 const token=u=>jwt.sign({sub:u.id},SECRET,{expiresIn:"8h",issuer:"saude",audience:"portal"});
 const auth=()=>async(req,res,next)=>{try{const t=req.cookies.saude_session||(req.headers.authorization||"").replace(/^Bearer /i,"");if(!t)return res.status(401).json({error:"Faça login para continuar."});const p=jwt.verify(t,SECRET,{issuer:"saude",audience:"portal"});const u=await prisma.user.findUnique({where:{id:p.sub}});if(!u||!u.active)return res.status(401).json({error:"Sessão inválida."});req.user=u;next()}catch{return res.status(401).json({error:"Sessão expirada ou inválida."})}};
