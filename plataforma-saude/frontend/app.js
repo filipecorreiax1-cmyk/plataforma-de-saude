@@ -218,5 +218,73 @@ async function loadVaccines() {
   }
 }
 
+
+/* Navegação mobile e compactação do cabeçalho */
+(() => {
+  const toggle = document.getElementById("menu-mobile-toggle");
+  const close = document.getElementById("menu-mobile-close");
+  const menu = document.getElementById("menu-mobile");
+  const overlay = document.getElementById("mobile-overlay");
+  const header = document.querySelector(".topbar");
+
+  if (header) {
+    let scheduled = false;
+    const updateHeader = () => {
+      header.classList.toggle("menu-rolado", window.scrollY > 70);
+      scheduled = false;
+    };
+    window.addEventListener("scroll", () => {
+      if (!scheduled) {
+        window.requestAnimationFrame(updateHeader);
+        scheduled = true;
+      }
+    }, { passive: true });
+    updateHeader();
+  }
+
+  if (!toggle || !menu || !overlay) return;
+
+  function openMenu() {
+    document.body.classList.add("mobile-menu-open");
+    menu.inert = false;
+    overlay.setAttribute("aria-hidden", "false");
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("aria-label", "Fechar menu");
+    close?.focus();
+  }
+
+  function closeMenu() {
+    document.body.classList.remove("mobile-menu-open");
+    menu.inert = true;
+    overlay.setAttribute("aria-hidden", "true");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Abrir menu");
+    toggle.focus();
+  }
+
+  toggle.addEventListener("click", () => {
+    document.body.classList.contains("mobile-menu-open") ? closeMenu() : openMenu();
+  });
+  close?.addEventListener("click", closeMenu);
+  overlay.addEventListener("click", closeMenu);
+
+  menu.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMenu));
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && document.body.classList.contains("mobile-menu-open")) {
+      closeMenu();
+    }
+  });
+
+  document.getElementById("mobile-login")?.addEventListener("click", () => {
+    closeMenu();
+    document.getElementById("login-open")?.click();
+  });
+
+  document.getElementById("mobile-font")?.addEventListener("click", () => {
+    document.getElementById("font-toggle")?.click();
+  });
+})();
+
 if (window.lucide) window.lucide.createIcons();
 loadVaccines();
