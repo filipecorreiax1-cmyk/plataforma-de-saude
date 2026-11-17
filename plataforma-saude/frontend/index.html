@@ -1,5 +1,29 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#087f8c"><meta name="description" content="Acesse consultas, vacinação e informações da sua unidade de saúde."><title>Saúde Perto — Portal do Cidadão</title><link rel="stylesheet" href="styles.css"><script src="https://unpkg.com/lucide@0.468.0"></script></head><body>
-<a class="skip-link" href="#conteudo">Pular para o conteúdo</a><header class="topbar"><a class="brand" href="#"><span class="brand-mark"><i data-lucide="heart-pulse"></i></span><span>Saúde <b>Perto</b><small>Portal do cidadão</small></span></a><nav aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#vacinas">Vacinação</a><a href="#informacoes">Informações</a></nav><div class="top-actions"><button class="text-button" id="font-toggle" type="button">A+ Texto</button><button class="button button-outline" id="login-open" type="button">Entrar</button></div></header>
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a><header class="topbar">
+<a class="brand" href="#" aria-label="Saúde Perto - início"><span class="brand-mark"><i data-lucide="heart-pulse"></i></span><span>Saúde <b>Perto</b><small>Portal do cidadão</small></span></a>
+<nav class="desktop-nav" aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#vacinas">Vacinação</a><a href="#informacoes">Informações</a></nav>
+<div class="top-actions">
+<button class="text-button" id="font-toggle" type="button">A+ Texto</button>
+<button class="button button-outline" id="login-open" type="button">Entrar</button>
+<button class="menu-mobile-toggle" id="menu-mobile-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-mobile"><i data-lucide="menu"></i></button>
+</div>
+</header>
+<div class="mobile-overlay" id="mobile-overlay" aria-hidden="true"></div>
+<nav class="mobile-menu" id="menu-mobile" aria-label="Navegação mobile" inert>
+<div class="mobile-menu-header">
+<div><span class="eyebrow">SAÚDE PERTO</span><h3>Menu principal</h3></div>
+<button type="button" id="menu-mobile-close" aria-label="Fechar menu"><i data-lucide="x"></i></button>
+</div>
+<div class="mobile-menu-links">
+<a href="#servicos"><i data-lucide="layout-grid"></i><span>Serviços</span><i data-lucide="chevron-right"></i></a>
+<a href="#vacinas"><i data-lucide="syringe"></i><span>Vacinação</span><i data-lucide="chevron-right"></i></a>
+<a href="#informacoes"><i data-lucide="info"></i><span>Informações</span><i data-lucide="chevron-right"></i></a>
+</div>
+<div class="mobile-menu-divider"></div>
+<button type="button" class="mobile-menu-action" id="mobile-login"><i data-lucide="user-round"></i>Entrar na minha conta</button>
+<button type="button" class="mobile-menu-action" id="mobile-font"><i data-lucide="type"></i>Aumentar texto</button>
+<div class="mobile-menu-footer"><i data-lucide="heart-pulse"></i><span>Saúde Perto — Cuidado mais próximo.</span></div>
+</nav>
 <main id="conteudo"><section class="hero"><div class="hero-copy"><span class="eyebrow"><i data-lucide="shield-check"></i> Atendimento público mais perto de você</span><h1>Sua saúde merece <span>cuidado e praticidade.</span></h1><p>Consulte informações, acompanhe a vacinação e organize seu atendimento na unidade de saúde sem precisar enfrentar filas desnecessárias.</p><div class="hero-actions"><button class="button button-primary" id="schedule-open"><i data-lucide="calendar-plus"></i> Agendar consulta</button><a class="button button-light" href="#vacinas">Consultar vacinas</a></div><p class="hero-note"><i data-lucide="info"></i> Em caso de urgência, procure atendimento presencial ou ligue 192 (SAMU).</p></div><div class="hero-art" aria-hidden="true"><div class="art-circle"><i data-lucide="heart-pulse"></i></div><div class="art-card"><i data-lucide="calendar-check"></i><span><b>Mais facilidade</b><small>Serviços em um só lugar</small></span></div></div></section>
 <section class="trust-strip"><div><i data-lucide="smartphone"></i><span><b>Feito para celular</b><small>Acesse de onde estiver</small></span></div><div><i data-lucide="lock-keyhole"></i><span><b>Seus dados protegidos</b><small>Acesso com segurança</small></span></div><div><i data-lucide="accessibility"></i><span><b>Acessível</b><small>Simples para todo mundo</small></span></div></section>
 <section class="section" id="servicos"><div class="section-heading"><div><span class="eyebrow">O que você precisa?</span><h2>Serviços de saúde</h2><p>Escolha uma opção para começar.</p></div></div><div class="service-grid"><article class="service-card"><span class="service-icon teal"><i data-lucide="calendar-days"></i></span><h3>Agendar consulta</h3><p>Encontre horários disponíveis e solicite atendimento.</p><button class="link-button" id="service-schedule">Acessar serviço <i data-lucide="arrow-right"></i></button></article><article class="service-card"><span class="service-icon green"><i data-lucide="clipboard-list"></i></span><h3>Meus agendamentos</h3><p>Consulte seus horários e cancele quando necessário.</p><button class="link-button" id="my-appointments">Ver agendamentos <i data-lucide="arrow-right"></i></button></article><article class="service-card"><span class="service-icon blue"><i data-lucide="syringe"></i></span><h3>Vacinação</h3><p>Confira vacinas disponíveis e orientações.</p><a class="link-button" href="#vacinas">Ver vacinas <i data-lucide="arrow-right"></i></a></article></div></section>
