@@ -28,7 +28,7 @@ Portal mobile-first para aproximar a população dos serviços da atenção bás
 - NURSE: gerencia vacinas e campanhas; não acessa a listagem geral de pacientes.
 - ADMIN: gerencia profissionais, horários e provisionamento do segundo fator.
 
-A autorização é validada no servidor. CPF e Cartão SUS são mascarados em listagens. Não há prontuário clínico completo nesta etapa. O agendamento utiliza horários previamente cadastrados e bloqueio transacional; a restrição única no banco impede duplicidade por profissional/horário. Cancelamentos liberam o horário novamente.
+A autorização é validada no servidor. O cadastro registra a confirmação de leitura do Aviso de Privacidade em `/privacidade.html`; o controlador público deve preencher e aprovar os campos indicados no modelo antes de publicar o portal. CPF e Cartão SUS são mascarados em listagens. Não há prontuário clínico completo nesta etapa. O agendamento utiliza horários previamente cadastrados e bloqueio transacional; a restrição única no banco impede duplicidade por profissional/horário. Cancelamentos liberam o horário novamente.
 
 ## Autenticação de profissionais
 O administrador provisiona o TOTP por `POST /api/admin/staff/:id/2fa/setup`; o profissional registra a chave em aplicativo autenticador; o administrador confirma o código por `POST /api/admin/staff/:id/2fa/confirm`. Contas profissionais sem 2FA ativo não conseguem entrar.
