@@ -20,3 +20,5 @@ Thumbs.db
 
 # Editor
 .vscode/
+# Manter apenas o modelo de configuração no repositório
+!**/.env.example
