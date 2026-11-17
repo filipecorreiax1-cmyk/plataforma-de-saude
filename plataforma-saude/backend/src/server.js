@@ -17,13 +17,38 @@ app.post("/api/auth/register",async(req,res)=>{try{const d=z.object({name:z.stri
 app.post("/api/auth/login",async(req,res)=>{try{const d=z.object({email:z.string().email(),password:z.string().min(1),otp:z.string().optional()}).parse(req.body);const u=await prisma.user.findUnique({where:{email:d.email.toLowerCase()}});if(!u||!u.active||!await bcrypt.compare(d.password,u.passwordHash))return res.status(401).json({error:"E-mail ou senha incorretos."});if(u.role!=="PATIENT"&&(!u.twoFactorOn||!u.twoFactorSecret||!d.otp||!speakeasy.totp.verify({secret:u.twoFactorSecret,encoding:"base32",token:d.otp,window:1})))return res.status(401).json({error:"Código de autenticação em duas etapas inválido ou não configurado."});res.cookie("saude_session",token(u),{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:28800000,path:"/"});await log(u.id,"LOGIN","User",u.id);res.json({user:safe(u)})}catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Dados de acesso inválidos."})}});
 app.post("/api/auth/logout",(q,s)=>s.clearCookie("saude_session",{httpOnly:true,sameSite:"strict",secure:process.env.NODE_ENV==="production",path:"/"}).json({message:"Sessão encerrada."}));
 app.get("/api/auth/me",auth(),(q,s)=>s.json({user:safe(q.user)}));
+// Provisionamento de 2FA: somente administrador pode iniciar; o profissional confirma o código no app autenticador.
+app.post("/api/admin/staff/:id/2fa/setup",auth(),roles("ADMIN"),async(req,res)=>{
+ const staff=await prisma.user.findUnique({where:{id:req.params.id}});
+ if(!staff||staff.role==="PATIENT")return res.status(404).json({error:"Profissional não encontrado."});
+ const secret=speakeasy.generateSecret({name:"Saúde Perto ("+staff.email+")"});
+ await prisma.user.update({where:{id:staff.id},data:{twoFactorSecret:secret.base32,twoFactorOn:false}});
+ res.json({otpauthUrl:secret.otpauth_url,manualKey:secret.base32,instructions:"Cadastre a chave em um aplicativo autenticador e confirme o código para ativar."});
+});
+app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)=>{
+ const {otp}=z.object({otp:z.string().length(6)}).parse(req.body);
+ const staff=await prisma.user.findUnique({where:{id:req.params.id}});
+ if(!staff||!staff.twoFactorSecret)return res.status(404).json({error:"Configuração não iniciada."});
+ if(!speakeasy.totp.verify({secret:staff.twoFactorSecret,encoding:"base32",token:otp,window:1}))return res.status(400).json({error:"Código inválido."});
+ await prisma.user.update({where:{id:staff.id},data:{twoFactorOn:true}});
+ await log(req.user.id,"STAFF_2FA_ENABLED","User",staff.id);
+ res.json({message:"Autenticação em duas etapas ativada."});
+});
 app.get("/api/staff/doctors",async(q,s)=>{const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true},select:{id:true,name:true}});s.json({doctors})});
 app.get("/api/appointments",auth(),async(req,res)=>{const where=req.user.role==="PATIENT"?{patientId:req.user.id}:req.user.role==="DOCTOR"?{doctorId:req.user.id}:{};const rows=await prisma.appointment.findMany({where,include:{patient:{select:{id:true,name:true,cpf:true,susCard:true,phone:true}},doctor:{select:{name:true}}},orderBy:{startsAt:"asc"}});res.json({appointments:rows.map(a=>({id:a.id,startsAt:a.startsAt,specialty:a.specialty,unit:a.unit,status:a.status,doctor:a.doctor.name,patient:req.user.role==="PATIENT"?undefined:{id:a.patient.id,name:a.patient.name,cpf:cpfMask(a.patient.cpf),susCard:susMask(a.patient.susCard),phone:a.patient.phone}}))})});
 app.post("/api/appointments",auth(),roles("PATIENT"),async(req,res)=>{try{const d=z.object({doctorId:z.string().uuid(),startsAt:z.string().datetime(),specialty:z.string().min(2).max(80),unit:z.string().min(2).max(120)}).parse(req.body);const date=new Date(d.startsAt);if(date<=new Date())return res.status(400).json({error:"Escolha um horário futuro."});if(!await prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true}}))return res.status(404).json({error:"Profissional não encontrado."});const a=await prisma.appointment.create({data:{patientId:req.user.id,doctorId:d.doctorId,startsAt:date,specialty:d.specialty,unit:d.unit}});await log(req.user.id,"APPOINTMENT_CREATED","Appointment",a.id);res.status(201).json({appointment:a})}catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Horário indisponível. Escolha outro.":e.errors?.[0]?.message||"Não foi possível agendar."})}});
 app.patch("/api/appointments/:id/cancel",auth(),async(req,res)=>{const a=await prisma.appointment.findUnique({where:{id:req.params.id}});if(!a)return res.status(404).json({error:"Agendamento não encontrado."});if(req.user.role==="PATIENT"&&a.patientId!==req.user.id)return res.status(403).json({error:"Você não pode alterar este agendamento."});if(!["PATIENT","ADMIN"].includes(req.user.role))return res.status(403).json({error:"Ação não permitida."});if(a.status!=="SCHEDULED")return res.status(409).json({error:"Agendamento não está ativo."});const updated=await prisma.appointment.update({where:{id:a.id},data:{status:"CANCELLED",cancelledAt:new Date()}});await log(req.user.id,"APPOINTMENT_CANCELLED","Appointment",a.id);res.json({appointment:updated})});
 app.get("/api/vaccines",async(q,s)=>{const [vaccines,calendar]=await Promise.all([prisma.vaccine.findMany({where:{active:true},orderBy:{name:"asc"}}),prisma.immunizationEvent.findMany({where:{endsAt:{gte:new Date()}},orderBy:{startsAt:"asc"}})]);s.json({vaccines,calendar})});
 app.post("/api/vaccines",auth(),roles("NURSE","ADMIN"),async(req,res)=>{try{const d=z.object({name:z.string().min(2),description:z.string().min(5),targetGroup:z.string().min(2),doses:z.string().min(1)}).parse(req.body);const v=await prisma.vaccine.create({data:d});await log(req.user.id,"VACCINE_CREATED","Vaccine",v.id);res.status(201).json({vaccine:v})}catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Dados inválidos."})}});
-app.get("/api/staff/patients",auth(),roles("DOCTOR","NURSE","ADMIN"),async(req,res)=>{const p=await prisma.user.findMany({where:{role:"PATIENT",active:true},select:{id:true,name:true,cpf:true,susCard:true,phone:true}});res.json({patients:p.map(x=>({...x,cpf:cpfMask(x.cpf),susCard:susMask(x.susCard)}))})});
+app.get("/api/staff/patients",auth(),roles("DOCTOR","NURSE","ADMIN"),async(req,res)=>{
+ let patientIds;
+ if(req.user.role==="DOCTOR"){
+  const assigned=await prisma.appointment.findMany({where:{doctorId:req.user.id},select:{patientId:true},distinct:["patientId"]});
+  patientIds=assigned.map(x=>x.patientId);
+ }
+ const p=await prisma.user.findMany({where:{role:"PATIENT",active:true,...(patientIds?{id:{in:patientIds}}:{})},select:{id:true,name:true,cpf:true,susCard:true,phone:true}});
+ res.json({patients:p.map(x=>({...x,cpf:cpfMask(x.cpf),susCard:susMask(x.susCard)}))});
+});
 app.use((e,q,s,n)=>{console.error(e);s.status(500).json({error:"Erro interno. Tente novamente mais tarde."})});
 app.listen(PORT,()=>console.log("Plataforma de Saúde na porta "+PORT));
 process.on("beforeExit",()=>prisma.$disconnect());
