@@ -2,7 +2,9 @@ require("dotenv").config();
 const path=require("node:path"),express=require("express"),helmet=require("helmet"),cookieParser=require("cookie-parser"),rateLimit=require("express-rate-limit"),bcrypt=require("bcryptjs"),jwt=require("jsonwebtoken"),speakeasy=require("speakeasy"),{PrismaClient}=require("@prisma/client"),{z}=require("zod");
 const app=express(),prisma=new PrismaClient(),PORT=process.env.PORT||3000,SECRET=process.env.JWT_SECRET;
 if(!SECRET||SECRET.length<32){console.error("Configure JWT_SECRET com ao menos 32 caracteres.");process.exit(1)}
-app.disable("x-powered-by");app.use(helmet({contentSecurityPolicy:false}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));app.use(express.static(path.join(__dirname,"../../frontend")));
+app.disable("x-powered-by");app.set("trust proxy",1);
+app.use((req,res,next)=>{if(process.env.NODE_ENV==="production"&&req.get("x-forwarded-proto")!=="https")return res.redirect(308,"https://"+req.get("host")+req.originalUrl);next()});
+app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));app.use(express.static(path.join(__dirname,"../../frontend")));
 const {cpfOk,cpfMask,susMask}=require("./validation");
 const safe=u=>({id:u.id,name:u.name,email:u.email,role:u.role,cpf:cpfMask(u.cpf),susCard:susMask(u.susCard),phone:u.phone});
 const token=u=>jwt.sign({sub:u.id},SECRET,{expiresIn:"8h",issuer:"saude",audience:"portal"});
