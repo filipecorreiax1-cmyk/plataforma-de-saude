@@ -1,0 +1,9 @@
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const {cpfOk,cpfMask,susMask}=require("./validation");
+test("aceita CPF válido",()=>assert.equal(cpfOk("529.982.247-25"),true));
+test("rejeita CPF com dígitos repetidos",()=>assert.equal(cpfOk("111.111.111-11"),false));
+test("rejeita CPF com dígito verificador incorreto",()=>assert.equal(cpfOk("529.982.247-24"),false));
+test("mascara CPF em listagens",()=>assert.equal(cpfMask("52998224725"),"529.***.***-25"));
+test("mascara Cartão SUS exibindo apenas quatro dígitos finais",()=>assert.equal(susMask("898001234567890"),"•••• •••• •••• 7890"));
+test("retorna nulo para Cartão SUS ausente",()=>assert.equal(susMask(null),null));
