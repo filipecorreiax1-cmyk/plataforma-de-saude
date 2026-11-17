@@ -3,7 +3,7 @@
 Portal mobile-first para aproximar a população dos serviços da atenção básica: cadastro, agendamento e cancelamento de consultas, consulta de vacinas e calendário municipal.
 
 ## Estrutura
-- `frontend/`: interface responsiva e acessível.
+- `frontend/`: portal do cidadão, área da equipe, interface responsiva e acessível.
 - `backend/src/server.js`: API Express, autenticação e autorização.
 - `backend/prisma/schema.prisma`: PostgreSQL, usuários, profissionais, consultas, horários, vacinas, campanhas e auditoria.
 
@@ -17,10 +17,10 @@ Portal mobile-first para aproximar a população dos serviços da atenção bás
 7. Execute `npm start` e abra http://localhost:3000.
 
 ## Fluxo de operação
-- O administrador cadastra profissionais por `POST /api/admin/staff`.
-- O administrador cria horários por `POST /api/admin/slots` (profissional, data/hora, especialidade e unidade).
+- O administrador acessa `/staff.html`, cadastra profissionais pela tela e provisiona o 2FA.
+- O administrador cria horários pela área da equipe (profissional, data/hora, especialidade e unidade).
 - O cidadão consulta os profissionais e horários em aberto, solicita uma vaga e pode cancelar seu próprio agendamento.
-- A equipe de enfermagem/administrador cadastra vacinas em `POST /api/vaccines` e campanhas em `POST /api/immunization-events`.
+- A equipe de enfermagem/administrador cadastra vacinas e campanhas pela área da equipe.
 
 ## Papéis e proteção de dados
 - PATIENT: acessa apenas os próprios agendamentos.
