@@ -91,7 +91,8 @@ $("#register-form").addEventListener("submit", async (event) => {
         cpf: $("#reg-cpf").value,
         phone: $("#reg-phone").value,
         susCard: $("#reg-sus").value,
-        password: $("#reg-password").value
+        password: $("#reg-password").value,
+        privacyNoticeAccepted: $("#privacy-accepted").checked
       })
     });
     closeDialog("#register-dialog");
