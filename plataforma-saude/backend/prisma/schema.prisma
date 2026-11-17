@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  NURSE
+  ADMIN
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model User {
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  passwordHash    String
+  cpf             String        @unique
+  susCard         String?
+  phone           String
+  role            Role          @default(PATIENT)
+  active          Boolean       @default(true)
+  twoFactorSecret String?
+  twoFactorOn     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  patientAppointments Appointment[] @relation("PatientAppointments")
+  doctorAppointments  Appointment[] @relation("DoctorAppointments")
+  auditEvents     AuditEvent[]
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  patientId   String
+  doctorId    String
+  startsAt    DateTime
+  specialty   String
+  unit        String
+  status      AppointmentStatus @default(SCHEDULED)
+  createdAt   DateTime          @default(now())
+  cancelledAt DateTime?
+  patient     User              @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctor      User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  @@unique([doctorId, startsAt])
+  @@index([patientId, startsAt])
+}
+
+model Vaccine {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  targetGroup String
+  doses       String
+  active      Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+model ImmunizationEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  startsAt    DateTime
+  endsAt      DateTime?
+  unit        String
+  createdAt   DateTime @default(now())
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+  @@index([actorId, createdAt])
+}
