@@ -1,4 +1,34 @@
 const $ = (selector) => document.querySelector(selector);
+let currentUser = null;
+
+function setAuthenticatedUser(user) {
+  currentUser = user || null;
+  const loginButton = $("#login-open");
+  const logoutButton = $("#logout-button");
+  const mobileLogin = $("#mobile-login");
+
+  loginButton.textContent = currentUser ? "Minha conta" : "Entrar";
+  logoutButton.hidden = !currentUser;
+  if (mobileLogin) {
+    mobileLogin.innerHTML = currentUser
+      ? '<i data-lucide="user-round"></i>Minha conta'
+      : '<i data-lucide="user-round"></i>Entrar na minha conta';
+    if (window.lucide) window.lucide.createIcons();
+  }
+}
+
+async function restoreSession() {
+  try {
+    const session = await api("/api/auth/me");
+    if (session.user.role !== "PATIENT") {
+      window.location.href = "/staff.html";
+      return;
+    }
+    setAuthenticatedUser(session.user);
+  } catch {
+    setAuthenticatedUser(null);
+  }
+}
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
@@ -35,7 +65,20 @@ $("#font-toggle").addEventListener("click", () => {
   document.body.classList.toggle("large-text");
 });
 
-$("#login-open").addEventListener("click", () => openDialog("#auth-dialog"));
+$("#login-open").addEventListener("click", () => {
+  if (currentUser) loadAppointments();
+  else openDialog("#auth-dialog");
+});
+
+$("#logout-button").addEventListener("click", async () => {
+  try {
+    await api("/api/auth/logout", { method: "POST" });
+    setAuthenticatedUser(null);
+    toast("Você saiu da sua conta.");
+  } catch (error) {
+    toast(error.message);
+  }
+});
 $("#schedule-open").addEventListener("click", startSchedule);
 $("#service-schedule").addEventListener("click", startSchedule);
 $("#my-appointments").addEventListener("click", loadAppointments);
@@ -72,6 +115,7 @@ $("#auth-form").addEventListener("submit", async (event) => {
       window.location.href = "/staff.html";
       return;
     }
+    setAuthenticatedUser(session.user);
     toast("Login realizado.");
   } catch (error) {
     $("#auth-error").textContent = error.message;
@@ -287,4 +331,5 @@ async function loadVaccines() {
 })();
 
 if (window.lucide) window.lucide.createIcons();
+restoreSession();
 loadVaccines();
