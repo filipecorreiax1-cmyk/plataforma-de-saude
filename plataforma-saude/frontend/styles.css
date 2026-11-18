@@ -110,3 +110,7 @@ body.mobile-menu-open .mobile-menu { transform:translateX(0); visibility:visible
   .topbar, .topbar *, .mobile-menu, .mobile-overlay, .menu-mobile-toggle,
   .mobile-menu-links a { transition:none !important; }
 }
+
+
+/* Controles de sessão: respeita o atributo hidden nos botões do cabeçalho. */
+.top-actions [hidden] { display: none !important; }
