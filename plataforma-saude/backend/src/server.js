@@ -1,7 +1,9 @@
 require("dotenv").config();
 const path=require("node:path"),express=require("express"),helmet=require("helmet"),cookieParser=require("cookie-parser"),rateLimit=require("express-rate-limit"),bcrypt=require("bcryptjs"),jwt=require("jsonwebtoken"),speakeasy=require("speakeasy"),{PrismaClient}=require("@prisma/client"),{z}=require("zod");
 const app=express(),prisma=new PrismaClient(),PORT=process.env.PORT||3000,SECRET=process.env.JWT_SECRET;
-if(!SECRET||SECRET.length<32){console.error("Configure JWT_SECRET com ao menos 32 caracteres.");process.exit(1)}
+if (!SECRET || SECRET.length < 32) {
+  throw new Error("Configure JWT_SECRET com ao menos 32 caracteres.");
+}
 app.disable("x-powered-by");app.set("trust proxy",1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==="production"&&req.get("x-forwarded-proto")!=="https")return res.redirect(308,"https://"+req.get("host")+req.originalUrl);next()});
 app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));
@@ -109,5 +111,11 @@ app.get("/api/staff/patients",auth(),roles("DOCTOR","ADMIN"),async(req,res)=>{
  res.json({patients:p.map(x=>({...x,cpf:cpfMask(x.cpf),susCard:susMask(x.susCard)}))});
 });
 app.use((e,q,s,n)=>{console.error(e);s.status(500).json({error:"Erro interno. Tente novamente mais tarde."})});
-app.listen(PORT,()=>console.log("Plataforma de Saúde na porta "+PORT));
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log("Plataforma de Saúde na porta " + PORT);
+  });
+}
+
+module.exports = app;
 process.on("beforeExit",()=>prisma.$disconnect());
