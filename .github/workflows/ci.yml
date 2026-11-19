@@ -7,9 +7,6 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: plataforma-saude
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,8 +15,8 @@ jobs:
       - run: npm install
       - run: node --check backend/src/server.js
       - run: node --check backend/src/create-admin.js
-      - run: node --check frontend/app.js
-      - run: node --check frontend/staff.js
+      - run: node --check public/app.js
+      - run: node --check public/staff.js
       - run: npm test
       - run: npx prisma validate
         env:

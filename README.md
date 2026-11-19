@@ -3,13 +3,13 @@
 Portal mobile-first para aproximar a população dos serviços da atenção básica: cadastro, agendamento e cancelamento de consultas, consulta de vacinas e calendário municipal.
 
 ## Estrutura
-- `frontend/`: portal do cidadão, área da equipe, interface responsiva e acessível.
+- `public/`: portal do cidadão, área da equipe, interface responsiva e acessível.
 - `backend/src/server.js`: API Express, autenticação e autorização.
 - `backend/prisma/schema.prisma`: PostgreSQL, usuários, profissionais, consultas, horários, vacinas, campanhas e auditoria.
 
 ## Instalação local
 1. Instale Node.js 20+ e PostgreSQL.
-2. Na pasta `plataforma-saude`, execute `npm install`.
+2. Na raiz do repositório, execute `npm install`.
 3. Copie `backend/.env.example` para `.env` e ajuste `DATABASE_URL`, `JWT_SECRET` (segredo aleatório de pelo menos 32 caracteres) e os dados de bootstrap do administrador.
 4. Execute `npx prisma generate`.
 5. Execute `npx prisma migrate dev --name inicial`.

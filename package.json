@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Portal de acesso aos serviços da atenção básica",
-  "main": "backend/src/server.js",
+  "main": "server.js",
   "scripts": {
     "start": "node backend/src/server.js",
     "dev": "nodemon backend/src/server.js",

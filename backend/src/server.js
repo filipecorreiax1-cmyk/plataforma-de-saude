@@ -8,7 +8,7 @@ app.disable("x-powered-by");app.set("trust proxy",1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==="production"&&req.get("x-forwarded-proto")!=="https")return res.redirect(308,"https://"+req.get("host")+req.originalUrl);next()});
 app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));
 const loginLimiter=rateLimit({windowMs:900000,limit:8,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de login. Aguarde 15 minutos."}});
-const registerLimiter=rateLimit({windowMs:3600000,limit:5,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de cadastro. Tente novamente mais tarde."}});app.use(express.static(path.join(__dirname,"../../frontend")));
+const registerLimiter=rateLimit({windowMs:3600000,limit:5,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de cadastro. Tente novamente mais tarde."}});app.use(express.static(path.join(__dirname,"../../public")));
 const {cpfOk,cpfMask,susMask}=require("./validation");
 const safe=u=>({id:u.id,name:u.name,email:u.email,role:u.role,cpf:cpfMask(u.cpf),susCard:susMask(u.susCard),phone:u.phone,twoFactorOn:u.twoFactorOn});
 const token=u=>jwt.sign({sub:u.id},SECRET,{expiresIn:"8h",issuer:"saude",audience:"portal"});
