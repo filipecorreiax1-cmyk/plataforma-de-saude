@@ -177,10 +177,10 @@ async function loadSlots() {
     const result = await api("/api/staff/slots?doctorId=" + encodeURIComponent(doctorId));
     $("#slot").innerHTML = result.slots.length
       ? '<option value="">Selecione o horário</option>' + result.slots.map((slot) =>
-          '<option value="' + slot.id + '">' +
-          new Date(slot.startsAt).toLocaleString("pt-BR") + " · " +
-          escapeHtml(slot.specialty) + " · " + escapeHtml(slot.unit) + "</option>"
-        ).join("")
+        '<option value="' + slot.id + '">' +
+        new Date(slot.startsAt).toLocaleString("pt-BR") + " · " +
+        escapeHtml(slot.specialty) + " · " + escapeHtml(slot.unit) + "</option>"
+      ).join("")
       : '<option value="">Nenhum horário disponível</option>';
   } catch (error) {
     $("#slot").innerHTML = '<option value="">Não foi possível carregar</option>';
@@ -208,15 +208,21 @@ async function loadAppointments() {
     const result = await api("/api/appointments");
     $("#appointments-list").innerHTML = result.appointments.length
       ? result.appointments.map((appointment) =>
-          '<article class="appointment-row"><b>' + escapeHtml(appointment.specialty) +
-          "</b><p>" + new Date(appointment.startsAt).toLocaleString("pt-BR") +
-          " · " + escapeHtml(appointment.unit) + "</p><p>Profissional: " +
-          escapeHtml(appointment.doctor) + "</p><p>Status: " +
-          escapeHtml(appointment.status) + "</p>" +
-          (appointment.status === "SCHEDULED"
-            ? '<button class="button button-outline" data-cancel="' + appointment.id +
-              '">Cancelar agendamento</button>' : "") + "</article>"
-        ).join("")
+        '<article class="appointment-row"><b>' + escapeHtml(appointment.specialty) +
+        "</b><p>" + new Date(appointment.startsAt).toLocaleString("pt-BR") +
+        " · " + escapeHtml(appointment.unit) + "</p><p>Profissional: " +
+        escapeHtml(appointment.doctor) + "</p><p>Status: " +
+        escapeHtml(
+          appointment.status === "SCHEDULED" ? "Agendada" :
+            appointment.status === "CANCELLED" ? "Cancelada" :
+              appointment.status === "COMPLETED" ? "Concluída" :
+                appointment.status === "NO_SHOW" ? "Não compareceu" :
+                  appointment.status
+        ) + "</p>" +
+        (appointment.status === "SCHEDULED"
+          ? '<button class="button button-outline" data-cancel="' + appointment.id +
+          '">Cancelar agendamento</button>' : "") + "</article>"
+      ).join("")
       : "<p>Você ainda não possui agendamentos.</p>";
 
     $("#appointments-list").querySelectorAll("[data-cancel]").forEach((button) => {
@@ -242,20 +248,20 @@ async function loadVaccines() {
     const result = await api("/api/vaccines");
     $("#vaccine-list").innerHTML = result.vaccines.length
       ? result.vaccines.map((vaccine) =>
-          '<article class="vaccine-card"><h3>' + escapeHtml(vaccine.name) +
-          "</h3><p>" + escapeHtml(vaccine.description) + "</p><p><b>Indicação:</b> " +
-          escapeHtml(vaccine.targetGroup) + "</p><p><b>Doses:</b> " +
-          escapeHtml(vaccine.doses) + "</p></article>"
-        ).join("")
+        '<article class="vaccine-card"><h3>' + escapeHtml(vaccine.name) +
+        "</h3><p>" + escapeHtml(vaccine.description) + "</p><p><b>Indicação:</b> " +
+        escapeHtml(vaccine.targetGroup) + "</p><p><b>Doses:</b> " +
+        escapeHtml(vaccine.doses) + "</p></article>"
+      ).join("")
       : '<p class="muted">Vacinas ainda não cadastradas pela unidade.</p>';
 
     $("#calendar-list").innerHTML = result.calendar.length
       ? result.calendar.map((event) =>
-          '<div class="event-item"><b>' + escapeHtml(event.title) + "</b><small>" +
-          new Date(event.startsAt).toLocaleDateString("pt-BR") + " · " +
-          escapeHtml(event.unit) + "</small><p>" + escapeHtml(event.description) +
-          "</p></div>"
-        ).join("")
+        '<div class="event-item"><b>' + escapeHtml(event.title) + "</b><small>" +
+        new Date(event.startsAt).toLocaleDateString("pt-BR") + " · " +
+        escapeHtml(event.unit) + "</small><p>" + escapeHtml(event.description) +
+        "</p></div>"
+      ).join("")
       : '<p class="muted">Nenhuma campanha cadastrada. Consulte sua unidade.</p>';
   } catch {
     $("#vaccine-list").textContent = "Não foi possível carregar as informações.";
