@@ -10,7 +10,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "test": "node --test",
-    "admin:create": "node backend/src/create-admin.js"
+    "admin:create": "node backend/src/create-admin.js",
+    "postinstall": "prisma generate --schema=backend/prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -34,5 +35,19 @@
   },
   "prisma": {
     "schema": "backend/prisma/schema.prisma"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "^8.0.1",
+      "effect": "^3.22.1"
+    },
+    "nodemon": {
+      "minimatch": "^11.0.1"
+    }
+  },
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "prisma": true
   }
 }
