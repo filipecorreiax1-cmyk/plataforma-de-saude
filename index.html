@@ -154,8 +154,8 @@
                 id="auth-email" type="email" autocomplete="email" required><label
                 for="auth-password">Senha</label><input id="auth-password" type="password"
                 autocomplete="current-password" required minlength="10">
-            <div id="otp-wrap" hidden><label for="auth-otp">Código de verificação profissional</label><input
-                    id="auth-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+            <div id="otp-wrap" hidden><label for="auth-otp">Código do aplicativo autenticador (6 dígitos)</label><input
+                    id="auth-otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000"></div>
             <p id="auth-error" class="form-error" role="alert"></p><button class="button button-primary full"
                 type="submit">Entrar com segurança</button>
             <p class="dialog-switch">Ainda não tem conta? <button type="button" class="inline-link"
