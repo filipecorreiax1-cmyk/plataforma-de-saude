@@ -1,6 +1,46 @@
 const $ = (selector) => document.querySelector(selector);
 let currentUser = null;
 
+/* Scroll Reveal: observa elementos sem interferir nos fluxos da aplicação. */
+let scrollRevealObserver = null;
+
+function setupScrollReveal() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion || !("IntersectionObserver" in window)) return;
+
+  scrollRevealObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+
+  document.body.classList.add("reveal-enabled");
+  refreshScrollReveal();
+}
+
+function refreshScrollReveal(root = document) {
+  if (!scrollRevealObserver) return;
+  const revealGroups = [
+    [".hero-copy", "left"], [".hero-art", "right"],
+    [".trust-strip > div", "fade"], [".section-heading", "up"],
+    [".service-card", "up"], [".vaccine-card", "up"],
+    [".calendar-panel", "up"], [".event-item", "fade"],
+    [".info-section > div:first-child", "left"], [".info-list > div", "up"],
+    ["footer .brand", "fade"], ["footer p", "up"], ["footer > small", "fade"]
+  ];
+  revealGroups.forEach(([selector, effect]) => {
+    root.querySelectorAll(selector).forEach((element, index) => {
+      if (element.dataset.revealReady) return;
+      element.dataset.revealReady = "true";
+      element.dataset.reveal = effect;
+      element.style.setProperty("--reveal-delay", Math.min(index * 90, 270) + "ms");
+      scrollRevealObserver.observe(element);
+    });
+  });
+}
+
 function setAuthenticatedUser(user) {
   currentUser = user || null;
   const loginButton = $("#login-open");
@@ -263,6 +303,7 @@ async function loadVaccines() {
         "</p></div>"
       ).join("")
       : '<p class="muted">Nenhuma campanha cadastrada. Consulte sua unidade.</p>';
+    refreshScrollReveal();
   } catch {
     $("#vaccine-list").textContent = "Não foi possível carregar as informações.";
   }
@@ -336,6 +377,7 @@ async function loadVaccines() {
   });
 })();
 
+setupScrollReveal();
 if (window.lucide) window.lucide.createIcons();
 restoreSession();
 loadVaccines();
