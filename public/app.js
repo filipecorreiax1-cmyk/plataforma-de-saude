@@ -110,6 +110,13 @@ $("#auth-form").addEventListener("submit", async (event) => {
         otp: $("#auth-otp").value || undefined
       })
     });
+    if (session.requiresTwoFactor) {
+      $("#otp-wrap").hidden = false;
+      $("#auth-otp").required = true;
+      $("#auth-error").textContent = session.message;
+      $("#auth-otp").focus();
+      return;
+    }
     closeDialog("#auth-dialog");
     if (session.user.role !== "PATIENT") {
       window.location.href = "/staff.html";
@@ -119,7 +126,11 @@ $("#auth-form").addEventListener("submit", async (event) => {
     toast("Login realizado.");
   } catch (error) {
     $("#auth-error").textContent = error.message;
-    $("#otp-wrap").hidden = false;
+    if (error.message.includes("Código de autenticação em duas etapas")) {
+      $("#otp-wrap").hidden = false;
+      $("#auth-otp").required = true;
+      $("#auth-otp").focus();
+    }
   }
 });
 
