@@ -44,12 +44,12 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  await log(req.user.id,"STAFF_2FA_ENABLED","User",staff.id);
  res.json({message:"Autenticação em duas etapas ativada."});
 });
-app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},select:{id:true,name:true}});s.json({doctors})});
-app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{is:{active:true}}}}},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
+app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null},healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}}}},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
 app.get("/api/staff/slots",async(req,res)=>{
  const doctorId=String(req.query.doctorId||"");
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
- const slots=await prisma.scheduleSlot.findMany({where:{doctorId,isOpen:true,startsAt:{gt:new Date()},healthUnitId:{not:null},healthUnit:{is:{active:true,doctors:{some:{doctorId}}}}},orderBy:{startsAt:"asc"},take:100,select:{id:true,startsAt:true,specialty:true,unit:true,healthUnitId:true}});
+ const slots=await prisma.scheduleSlot.findMany({where:{doctorId,isOpen:true,startsAt:{gt:new Date()},healthUnitId:{not:null},healthUnit:{is:{active:true,doctors:{some:{doctorId}}}},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}},orderBy:{startsAt:"asc"},take:100,select:{id:true,startsAt:true,specialty:true,unit:true,healthUnitId:true}});
  res.json({slots});
 });
 app.post("/api/admin/slots",auth(),roles("ADMIN"),async(req,res)=>{
@@ -57,7 +57,7 @@ app.post("/api/admin/slots",auth(),roles("ADMIN"),async(req,res)=>{
   const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),startsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80)}).parse(req.body);
   if(new Date(d.startsAt)<=new Date())return res.status(400).json({error:"O horário precisa ser futuro."});
   const [doctor,unit,assignment]=await Promise.all([
-   prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true}}),
+   prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),
    prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),
    prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}})
   ]);
@@ -104,7 +104,7 @@ app.post("/api/admin/units/:id/doctors",auth(),roles("ADMIN"),async(req,res)=>{
  }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível vincular o profissional."})}
 });
 app.delete("/api/admin/units/:id/doctors/:doctorId",auth(),roles("ADMIN"),async(req,res)=>{
- const result=await prisma.healthUnitDoctor.deleteMany({where:{healthUnitId:req.params.id,doctorId:req.params.doctorId}});
+ const result=await prisma.$transaction(async tx=>{const removed=await tx.healthUnitDoctor.deleteMany({where:{healthUnitId:req.params.id,doctorId:req.params.doctorId}});if(removed.count)await tx.scheduleSlot.updateMany({where:{healthUnitId:req.params.id,doctorId:req.params.doctorId,isOpen:true},data:{isOpen:false}});return removed;});
  if(!result.count)return res.status(404).json({error:"Vínculo não encontrado."});
  await log(req.user.id,"HEALTH_UNIT_DOCTOR_UNASSIGNED","HealthUnitDoctor",req.params.id+":"+req.params.doctorId);
  res.json({message:"Vínculo removido."});
