@@ -462,3 +462,33 @@ input:focus, select:focus, .staff-form textarea:focus {
   .hero { flex-direction: column; align-items: stretch; }
   .hero-art { align-self: center; }
 }
+
+/* Painel do cidadão */
+.citizen-dashboard{padding:48px max(5vw,20px) 54px;background:linear-gradient(180deg,#f4faf9 0%,#fff 100%);border-bottom:1px solid var(--line)}
+.citizen-dashboard[hidden]{display:none!important}
+.dashboard-heading{max-width:1180px;margin:0 auto 24px;display:flex;justify-content:space-between;align-items:center;gap:18px}
+.dashboard-heading h2{margin:7px 0 3px;font-size:clamp(26px,3vw,34px);letter-spacing:-.7px}
+.dashboard-heading h2 span{color:var(--teal)}
+.dashboard-heading p,.dashboard-panel-title p{margin:0;color:var(--muted);font-size:14px}
+.dashboard-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(260px,.85fr) minmax(320px,1.15fr);gap:18px;align-items:start}
+.dashboard-panel{min-width:0;padding:23px;background:#fff;border:1px solid #e1ecea;border-radius:18px;box-shadow:0 8px 24px rgba(24,59,78,.045)}
+.dashboard-panel-title{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.dashboard-panel-title h3{margin:0 0 2px;font-size:18px}
+.dashboard-icon{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:13px;color:var(--teal);background:#e5f4f2}
+.dashboard-icon.green{color:#16845b;background:#e8f5ed}.dashboard-icon.blue{color:#3d6d9b;background:#eaf1fa}
+.profile-details{margin:0;display:grid;gap:13px}.profile-details>div{padding-bottom:10px;border-bottom:1px solid #edf2f1}
+.profile-details dt{color:var(--muted);font-size:12px}.profile-details dd{margin:2px 0 0;font-weight:700;overflow-wrap:anywhere}
+.dashboard-privacy{display:flex;align-items:flex-start;gap:7px;margin:18px 0 0;color:var(--muted);font-size:11px}
+.dashboard-privacy svg{width:15px;height:15px;flex:none;color:var(--green)}
+.dashboard-appointment{padding:14px;margin:10px 0;border:1px solid #e5eeed;border-radius:13px;background:#fff}
+.dashboard-appointment-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.dashboard-appointment-top b{font-size:14px}.dashboard-appointment p{display:flex;align-items:center;gap:7px;margin:8px 0 0;color:var(--muted);font-size:12px}
+.dashboard-appointment p svg{width:14px;height:14px;color:var(--teal);flex:none}
+.dashboard-appointment .button{min-height:38px;padding:8px 12px;margin-top:12px;font-size:12px}
+.status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:700;white-space:nowrap;background:#e8f5ed;color:#16724f}
+.status-cancelled{background:#fceeee;color:#a13b3b}.status-completed{background:#eaf1fa;color:#365f8b}.status-no_show{background:#f4f0e8;color:#82652f}
+.dashboard-empty{display:grid;justify-items:center;text-align:center;padding:22px 12px;color:var(--muted)}
+.dashboard-empty svg{width:30px;height:30px;color:#78aaa5}.dashboard-empty p{margin:9px 0 2px;color:var(--ink);font-weight:700}.dashboard-empty small{font-size:12px}
+.dashboard-empty.compact{padding:12px}.appointment-summary>.button{margin-top:12px}
+.history-panel{grid-column:1/-1}.history-panel #dashboard-history{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
+@media(max-width:760px){.citizen-dashboard{padding:34px 18px 40px}.dashboard-heading{align-items:flex-start;flex-direction:column}.dashboard-heading>.button{width:100%}.dashboard-grid{grid-template-columns:1fr}.history-panel{grid-column:auto}.history-panel #dashboard-history{grid-template-columns:1fr}.dashboard-panel{padding:19px}}
