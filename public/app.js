@@ -112,6 +112,21 @@ document.querySelectorAll("[data-close]").forEach((button) => {
   button.addEventListener("click", () => button.closest("dialog").close());
 });
 
+document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.getElementById(button.dataset.passwordToggle);
+    if (!input) return;
+    const showing = input.type === "password";
+    input.type = showing ? "text" : "password";
+    button.setAttribute("aria-label", showing ? "Ocultar senha" : "Mostrar senha");
+    button.setAttribute("aria-pressed", String(showing));
+    button.innerHTML = showing
+      ? '<i data-lucide="eye-off"></i>'
+      : '<i data-lucide="eye"></i>';
+    if (window.lucide) window.lucide.createIcons();
+  });
+});
+
 $("#font-toggle").addEventListener("click", () => {
   document.body.classList.toggle("large-text");
 });
