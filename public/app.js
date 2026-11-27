@@ -155,13 +155,32 @@ $("#register-open").addEventListener("click", () => {
   openDialog("#register-dialog");
 });
 
-async function startSchedule() {
+let scheduleOpening = false;
+
+async function startSchedule(event) {
+  if (scheduleOpening) return;
+  scheduleOpening = true;
+  const restoreButton = beginButtonLoading(event.currentTarget, "Preparando...");
   try {
-    await api("/api/auth/me");
-    await loadScheduleData();
-    openDialog("#schedule-dialog");
-  } catch {
-    openDialog("#auth-dialog");
+    try {
+      await api("/api/auth/me");
+    } catch {
+      openDialog("#auth-dialog");
+      return;
+    }
+    restoreButton();
+    const restoreSearchButton = beginButtonLoading(event.currentTarget, "Buscando horários...");
+    try {
+      await loadScheduleData();
+      openDialog("#schedule-dialog");
+    } finally {
+      restoreSearchButton();
+    }
+  } catch (error) {
+    toast("Não foi possível carregar os horários. " + error.message);
+  } finally {
+    restoreButton();
+    scheduleOpening = false;
   }
 }
 
