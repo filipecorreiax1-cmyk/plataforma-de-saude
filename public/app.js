@@ -65,6 +65,32 @@ function beginButtonLoading(button, label) {
   };
 }
 
+function initScrollReveal() {
+  const selectors = [
+    ".hero-copy", ".hero-art", ".trust-strip > div",
+    ".section-heading", ".service-card", ".vaccine-card",
+    ".calendar-panel", ".info-section > div", ".event-item"
+  ];
+  const elements = document.querySelectorAll(selectors.join(","));
+  if (!("IntersectionObserver" in window)) return;
+
+  const observer = new IntersectionObserver((entries, currentObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      currentObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -35px 0px" });
+
+  elements.forEach((element, index) => {
+    if (element.dataset.revealReady === "true") return;
+    element.dataset.revealReady = "true";
+    element.classList.add("scroll-reveal");
+    element.style.setProperty("--reveal-delay", Math.min(index % 4, 3) * 85 + "ms");
+    observer.observe(element);
+  });
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -306,6 +332,7 @@ async function loadVaccines() {
         "</p></div>"
       ).join("")
       : '<p class="muted">Nenhuma campanha cadastrada. Consulte sua unidade.</p>';
+    initScrollReveal();
   } catch {
     $("#vaccine-list").textContent = "Não foi possível carregar as informações.";
   }
@@ -380,5 +407,6 @@ async function loadVaccines() {
 })();
 
 if (window.lucide) window.lucide.createIcons();
+initScrollReveal();
 restoreSession();
 loadVaccines();
