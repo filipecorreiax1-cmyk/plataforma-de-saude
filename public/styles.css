@@ -535,3 +535,20 @@ input:focus, select:focus, .staff-form textarea:focus {
 .account-history .dashboard-panel-title>div{margin-right:auto}
 .account-upcoming>.button{margin-top:12px}
 @media(max-width:760px){.account-page{padding:36px 18px 48px}.account-grid{grid-template-columns:1fr}.account-history{grid-column:auto}.account-history #account-history-list{grid-template-columns:1fr}.account-history .dashboard-panel-title{flex-wrap:wrap}}
+
+
+/* Seleção da unidade e filtros do novo fluxo de agendamento */
+.unit-control{display:flex;align-items:center;gap:8px;max-width:220px;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);cursor:pointer;text-align:left}
+.unit-control>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unit-control small{display:block;color:var(--muted);font-size:10px;line-height:1.2}
+.unit-control b{font-size:12px;font-weight:700}
+.unit-control svg{width:17px;height:17px;flex:none;color:var(--teal)}
+.location-note{margin:10px 0;color:var(--muted);font-size:12px;line-height:1.5;background:#f2f8f7;border-radius:9px;padding:10px}
+#schedule-form .muted{font-size:13px;margin:0 0 12px}
+#schedule-form select:disabled{background:#f3f6f6;color:#83959a}
+@media(max-width:760px){
+  .topbar{flex-wrap:wrap!important}
+  .topbar .brand{order:1}
+  .topbar .top-actions{order:2}
+  .topbar .unit-control{order:3;width:100%;max-width:none;min-height:44px}
+}
