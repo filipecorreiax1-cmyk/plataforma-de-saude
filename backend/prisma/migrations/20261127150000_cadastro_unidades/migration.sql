@@ -11,5 +11,5 @@ CREATE TABLE "HealthUnit" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "HealthUnit_pkey" PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX "HealthUnit_name_key" ON "HealthUnit"("name");
+CREATE UNIQUE INDEX "HealthUnit_name_municipality_key" ON "HealthUnit"("name", "municipality");
 CREATE INDEX "HealthUnit_municipality_active_idx" ON "HealthUnit"("municipality", "active");
