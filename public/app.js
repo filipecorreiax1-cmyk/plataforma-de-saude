@@ -10,10 +10,10 @@ function setAuthenticatedUser(user) {
   const isPatient = Boolean(currentUser && currentUser.role === "PATIENT");
   loginButton.hidden = Boolean(currentUser);
   logoutButton.hidden = !currentUser;
-  $("#desktop-dashboard-link").hidden = !isPatient;
   $("#mobile-dashboard-link").hidden = !isPatient;
   $("#mobile-profile-link").hidden = !isPatient;
   $("#mobile-history-link").hidden = !isPatient;
+  $("#mobile-login").hidden = Boolean(currentUser);
   $("#register-open-top").hidden = Boolean(currentUser);
   $("#mobile-register").hidden = Boolean(currentUser);
   $("#mobile-logout").hidden = !currentUser;
@@ -191,8 +191,7 @@ $("#auth-form").addEventListener("submit", async (event) => {
       window.location.href = "/staff.html";
       return;
     }
-    setAuthenticatedUser(session.user);
-    toast("Login realizado.");
+    window.location.href = "/conta.html";
   } catch (error) {
     $("#auth-error").textContent = error.message;
     if (error.message.includes("Código de autenticação em duas etapas")) {
@@ -409,4 +408,5 @@ async function loadVaccines() {
 if (window.lucide) window.lucide.createIcons();
 initScrollReveal();
 restoreSession();
+if (new URLSearchParams(window.location.search).get("login") === "required") openDialog("#auth-dialog");
 loadVaccines();
