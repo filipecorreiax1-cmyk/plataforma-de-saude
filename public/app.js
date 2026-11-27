@@ -288,17 +288,18 @@ async function loadScheduleData() {
     return result.slots.map(slot => ({...slot, doctorId:doctor.id, doctorName:doctor.name}));
   }));
   scheduleSlots = groups.flat();
-  const units = [...new Set([...unitsResult.units, ...scheduleSlots.map(slot=>slot.unit)])].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const units = unitsResult.units;
   const options = units.length
-    ? '<option value="">Selecione uma unidade</option>' + units.map(unit=>'<option value="'+escapeHtml(unit)+'">'+escapeHtml(unit)+'</option>').join("")
+    ? '<option value="">Selecione uma unidade</option>' + units.map(unit=>'<option value="'+unit.id+'">'+escapeHtml(unit.name+' — '+unit.municipality)+'</option>').join("")
     : '<option value="">Nenhuma unidade com horário disponível</option>';
   $("#schedule-unit").innerHTML = options;
   $("#unit-select").innerHTML = options;
-  if (selectedUnit && units.includes(selectedUnit)) {
+  if (selectedUnit && units.some(unit=>unit.id===selectedUnit)) {
     $("#schedule-unit").value = selectedUnit;
     $("#unit-select").value = selectedUnit;
     updateSpecialties();
   } else {
+    selectedUnit = "";
     $("#schedule-specialty").innerHTML = '<option value="">Selecione primeiro a unidade</option>';
     $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
     $("#schedule-specialty").disabled = true;
@@ -308,8 +309,8 @@ async function loadScheduleData() {
 }
 
 function updateSpecialties() {
-  const unit = $("#schedule-unit").value;
-  const values = [...new Set(scheduleSlots.filter(slot=>slot.unit===unit).map(slot=>slot.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const unitId = $("#schedule-unit").value;
+  const values = [...new Set(scheduleSlots.filter(slot=>slot.healthUnitId===unitId).map(slot=>slot.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
   $("#schedule-specialty").innerHTML = values.length
     ? '<option value="">Selecione uma especialidade</option>' + values.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")
     : '<option value="">Nenhuma especialidade disponível</option>';
@@ -320,9 +321,9 @@ function updateSpecialties() {
 }
 
 function updateDoctors() {
-  const unit=$("#schedule-unit").value, specialty=$("#schedule-specialty").value;
+  const unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value;
   const doctors=new Map();
-  scheduleSlots.filter(slot=>slot.unit===unit&&slot.specialty===specialty).forEach(slot=>doctors.set(slot.doctorId,slot.doctorName));
+  scheduleSlots.filter(slot=>slot.healthUnitId===unitId&&slot.specialty===specialty).forEach(slot=>doctors.set(slot.doctorId,slot.doctorName));
   $("#doctor").innerHTML = doctors.size
     ? '<option value="">Selecione um profissional</option>' + [...doctors].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join("")
     : '<option value="">Nenhum profissional com horário disponível</option>';
@@ -336,10 +337,10 @@ $("#doctor").addEventListener("change",loadSlots);
 $("#schedule-period").addEventListener("change",loadSlots);
 
 function loadSlots() {
-  const doctorId=$("#doctor").value, unit=$("#schedule-unit").value, specialty=$("#schedule-specialty").value, period=$("#schedule-period").value;
+  const doctorId=$("#doctor").value, unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value, period=$("#schedule-period").value;
   if (!doctorId) { $("#slot").innerHTML='<option value="">Selecione o profissional</option>'; return; }
   const rows=scheduleSlots.filter(slot=>{
-    if(slot.doctorId!==doctorId||slot.unit!==unit||slot.specialty!==specialty)return false;
+    if(slot.doctorId!==doctorId||slot.healthUnitId!==unitId||slot.specialty!==specialty)return false;
     const hour=new Date(slot.startsAt).getHours();
     return period==="morning"?hour<12:period==="afternoon"?hour>=12:true;
   }).sort((a,b)=>new Date(a.startsAt)-new Date(b.startsAt));
@@ -356,7 +357,7 @@ $("#unit-form").addEventListener("submit",event=>{
   event.preventDefault();
   if(!$("#unit-select").value)return;
   selectedUnit=$("#unit-select").value;
-  $("#unit-label").textContent=selectedUnit;
+  $("#unit-label").textContent=$("#unit-select").selectedOptions[0]?.textContent||"Unidade selecionada";
   $("#unit-dialog").close();
 });
 $("#unit-geolocation").addEventListener("click",()=>{
