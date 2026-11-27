@@ -1,7 +1,28 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#087f8c"><title>Área da equipe — Saúde Perto</title><link rel="stylesheet" href="styles.css"></head><body>
 <a class="skip-link" href="#staff-main">Pular para o conteúdo</a><header class="topbar"><a class="brand" href="/"><span class="brand-mark">SP</span><span>Saúde <b>Perto</b><small>Área da equipe</small></span></a><div class="top-actions"><span id="staff-identity" class="muted">Verificando acesso...</span><button id="logout" class="button button-outline" type="button">Sair</button></div></header>
 <main id="staff-main" class="staff-main"><section class="staff-welcome"><span class="eyebrow">Painel de trabalho</span><h1 id="staff-title">Bem-vindo à área da equipe</h1><p id="staff-description">Carregando suas ferramentas...</p></section>
-<section id="doctor-area" class="staff-section" hidden><h2>Agenda de atendimentos</h2><p class="muted">Você visualiza somente os atendimentos vinculados ao seu usuário.</p><div id="doctor-appointments" class="staff-list" aria-live="polite"></div></section>
+<section id="doctor-area" class="doctor-dashboard" hidden>
+<div class="doctor-layout">
+<aside class="doctor-sidebar" aria-label="Menu do médico">
+<div class="doctor-sidebar-label">ÁREA MÉDICA</div>
+<a class="doctor-nav-link active" href="#doctor-overview"><span>⌂</span> Visão geral</a>
+<a class="doctor-nav-link" href="#doctor-schedule"><span>▦</span> Minha agenda</a>
+<a class="doctor-nav-link" href="#doctor-patients"><span>♙</span> Meus pacientes</a>
+<div class="doctor-sidebar-note"><b>Privacidade em primeiro lugar</b><small>As informações exibidas são limitadas aos pacientes vinculados aos seus atendimentos.</small></div>
+</aside>
+<div class="doctor-content">
+<section id="doctor-overview" class="doctor-panel-section">
+<div class="doctor-section-heading"><div><span class="eyebrow">SEU DIA DE TRABALHO</span><h2>Visão geral</h2><p class="muted">Acompanhe sua agenda e organize sua rotina.</p></div><span class="doctor-date" id="doctor-current-date"></span></div>
+<div class="doctor-stat-grid">
+<article class="doctor-stat"><span class="doctor-stat-icon">▦</span><strong id="doctor-today-count">—</strong><span>Consultas hoje</span></article>
+<article class="doctor-stat"><span class="doctor-stat-icon">◷</span><strong id="doctor-upcoming-count">—</strong><span>Próximos atendimentos</span></article>
+<article class="doctor-stat"><span class="doctor-stat-icon">✓</span><strong id="doctor-completed-count">—</strong><span>Concluídos</span></article>
+</div>
+<div class="doctor-panel-card"><div class="doctor-card-heading"><div><h3>Próximos atendimentos</h3><p class="muted">Seus compromissos mais próximos.</p></div><a class="doctor-text-link" href="#doctor-schedule">Ver agenda completa →</a></div><div id="doctor-next-appointments" class="staff-list" aria-live="polite"></div></div>
+</section>
+<section id="doctor-schedule" class="doctor-panel-section"><div class="doctor-section-heading"><div><span class="eyebrow">ORGANIZAÇÃO</span><h2>Minha agenda</h2><p class="muted">Atendimentos vinculados ao seu usuário.</p></div></div><div class="doctor-panel-card"><div id="doctor-appointments" class="staff-list" aria-live="polite"></div></div></section>
+<section id="doctor-patients" class="doctor-panel-section"><div class="doctor-section-heading"><div><span class="eyebrow">ACOMPANHAMENTO</span><h2>Meus pacientes</h2><p class="muted">Pacientes com atendimentos vinculados à sua agenda.</p></div></div><div class="doctor-panel-card"><div id="doctor-patients-list" class="staff-list" aria-live="polite"></div></div></section>
+</div></div></section>
 <section id="admin-area" class="staff-section" hidden><h2>Administração de profissionais</h2><form id="staff-form" class="staff-form"><h3>Cadastrar profissional</h3><div class="form-grid"><label>Nome completo<input id="new-name" required minlength="3"></label><label>E-mail institucional<input id="new-email" type="email" required></label><label>CPF<input id="new-cpf" inputmode="numeric" required maxlength="14"></label><label>Telefone<input id="new-phone" required></label><label>Senha temporária (12 caracteres ou mais)<input id="new-password" type="password" minlength="12" required></label><label>Perfil<select id="new-role"><option value="DOCTOR">Médico</option><option value="NURSE">Enfermeiro(a)</option></select></label></div><button class="button button-primary" type="submit">Cadastrar profissional</button><p id="staff-error" class="form-error" role="alert"></p></form>
 <div class="staff-form"><h3>Ativar autenticação em duas etapas</h3><p class="muted">Selecione o profissional, gere a chave e entregue-a por canal seguro. Depois confirme o código do aplicativo autenticador.</p><label for="staff-select">Profissional</label><select id="staff-select"><option value="">Selecione</option></select><button id="setup-2fa" class="button button-outline" type="button">Gerar configuração 2FA</button><div id="twofa-key" class="secret-panel" hidden></div><form id="confirm-2fa" hidden><label for="twofa-code">Código de seis dígitos</label><input id="twofa-code" inputmode="numeric" maxlength="6" required><button class="button button-primary" type="submit">Confirmar 2FA</button></form><p id="twofa-message" role="status" class="muted"></p></div>
 <div class="staff-form"><h3>Cadastrar horário de consulta</h3><form id="slot-form"><div class="form-grid"><label>Médico<select id="slot-doctor" required><option value="">Selecione</option></select></label><label>Data e horário<input id="slot-date" type="datetime-local" required></label><label>Especialidade<input id="slot-specialty" required></label><label>Unidade de saúde<input id="slot-unit" required></label></div><button class="button button-primary" type="submit">Publicar horário</button><p id="slot-message" role="status" class="muted"></p></form></div>
