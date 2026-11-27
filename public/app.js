@@ -13,6 +13,7 @@ function setAuthenticatedUser(user) {
   $("#mobile-dashboard-link").hidden = !isPatient;
   $("#mobile-profile-link").hidden = !isPatient;
   $("#mobile-history-link").hidden = !isPatient;
+  $("#mobile-appointments-link").hidden = !isPatient;
   $("#mobile-login").hidden = Boolean(currentUser);
   $("#register-open-top").hidden = Boolean(currentUser);
   $("#mobile-register").hidden = Boolean(currentUser);
