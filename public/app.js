@@ -147,7 +147,6 @@ $("#logout-button").addEventListener("click", async () => {
 });
 $("#schedule-open").addEventListener("click", startSchedule);
 $("#service-schedule").addEventListener("click", startSchedule);
-$("#my-appointments").addEventListener("click", loadAppointments);
 
 $("#register-open").addEventListener("click", () => {
   closeDialog("#auth-dialog");
