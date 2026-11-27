@@ -7,18 +7,16 @@ function setAuthenticatedUser(user) {
   const logoutButton = $("#logout-button");
   const mobileLogin = $("#mobile-login");
 
-  loginButton.textContent = currentUser ? "Minha conta" : "Entrar";
+  const isPatient = Boolean(currentUser && currentUser.role === "PATIENT");
+  loginButton.hidden = Boolean(currentUser);
   logoutButton.hidden = !currentUser;
-  const dashboard = $("#patient-dashboard");
-  if (dashboard) dashboard.hidden = !currentUser;
-  if (currentUser) {
-    $("#patient-name").textContent = currentUser.name || "cidadão";
-    $("#patient-email").textContent = currentUser.email || "—";
-    $("#patient-cpf").textContent = currentUser.cpf || "—";
-    $("#patient-sus").textContent = currentUser.susCard || "Não informado";
-    $("#patient-phone").textContent = currentUser.phone || "—";
-    loadPatientDashboard();
-  }
+  $("#mobile-dashboard-link").hidden = !isPatient;
+  $("#mobile-profile-link").hidden = !isPatient;
+  $("#mobile-history-link").hidden = !isPatient;
+  $("#mobile-login").hidden = Boolean(currentUser);
+  $("#register-open-top").hidden = Boolean(currentUser);
+  $("#mobile-register").hidden = Boolean(currentUser);
+  $("#mobile-logout").hidden = !currentUser;
   if (mobileLogin) {
     mobileLogin.innerHTML = currentUser
       ? '<i data-lucide="user-round"></i>Minha conta'
@@ -115,9 +113,26 @@ $("#font-toggle").addEventListener("click", () => {
   document.body.classList.toggle("large-text");
 });
 
-$("#login-open").addEventListener("click", () => {
-  if (currentUser) $("#patient-dashboard").scrollIntoView({behavior:"smooth",block:"start"});
-  else openDialog("#auth-dialog");
+$("#login-open").addEventListener("click", () => openDialog("#auth-dialog"));
+$("#mobile-logout").addEventListener("click", async () => {
+  document.getElementById("menu-mobile-close")?.click();
+  try { await api("/api/auth/logout", {method:"POST"}); setAuthenticatedUser(null); toast("Você saiu da sua conta."); }
+  catch (error) { toast(error.message); }
+});
+
+function openRegisterDialog() {
+  if (currentUser) return;
+  openDialog("#register-dialog");
+}
+$("#register-open-top").addEventListener("click", openRegisterDialog);
+$("#hero-register-open").addEventListener("click", openRegisterDialog);
+$("#mobile-register").addEventListener("click", () => {
+  document.getElementById("menu-mobile-close")?.click();
+  openRegisterDialog();
+});
+$("#login-from-register").addEventListener("click", () => {
+  closeDialog("#register-dialog");
+  openDialog("#auth-dialog");
 });
 
 $("#logout-button").addEventListener("click", async () => {
@@ -132,8 +147,6 @@ $("#logout-button").addEventListener("click", async () => {
 $("#schedule-open").addEventListener("click", startSchedule);
 $("#service-schedule").addEventListener("click", startSchedule);
 $("#my-appointments").addEventListener("click", loadAppointments);
-$("#dashboard-refresh").addEventListener("click", loadPatientDashboard);
-$("#dashboard-schedule").addEventListener("click", startSchedule);
 
 $("#register-open").addEventListener("click", () => {
   closeDialog("#auth-dialog");
@@ -178,8 +191,7 @@ $("#auth-form").addEventListener("submit", async (event) => {
       window.location.href = "/staff.html";
       return;
     }
-    setAuthenticatedUser(session.user);
-    toast("Login realizado.");
+    window.location.href = "/conta.html";
   } catch (error) {
     $("#auth-error").textContent = error.message;
     if (error.message.includes("Código de autenticação em duas etapas")) {
@@ -284,69 +296,6 @@ $("#schedule-form").addEventListener("submit", async (event) => {
   }
 });
 
-function appointmentStatusLabel(status) {
-  return ({SCHEDULED:"Agendada",CANCELLED:"Cancelada",COMPLETED:"Concluída",NO_SHOW:"Não compareceu"})[status] || status;
-}
-
-function appointmentCard(appointment, allowCancel = false) {
-  const date = new Date(appointment.startsAt);
-  return '<article class="dashboard-appointment"><div class="dashboard-appointment-top"><b>' +
-    escapeHtml(appointment.specialty) + '</b><span class="status-pill status-' +
-    escapeHtml(appointment.status.toLowerCase()) + '">' + escapeHtml(appointmentStatusLabel(appointment.status)) +
-    '</span></div><p><i data-lucide="calendar"></i>' +
-    escapeHtml(date.toLocaleString("pt-BR", {dateStyle:"short",timeStyle:"short"})) +
-    '</p><p><i data-lucide="map-pin"></i>' + escapeHtml(appointment.unit) +
-    '</p><p><i data-lucide="user-round"></i>' + escapeHtml(appointment.doctor) + '</p>' +
-    (allowCancel && appointment.status === "SCHEDULED"
-      ? '<button class="button button-outline" type="button" data-cancel="' + escapeHtml(appointment.id) + '">Cancelar agendamento</button>' : '') +
-    '</article>';
-}
-
-function bindCancelButtons(container, onSuccess) {
-  container.querySelectorAll("[data-cancel]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      if (!window.confirm("Deseja cancelar este agendamento?")) return;
-      button.disabled = true;
-      try {
-        await api("/api/appointments/" + encodeURIComponent(button.dataset.cancel) + "/cancel", {method:"PATCH"});
-        toast("Agendamento cancelado.");
-        await onSuccess();
-      } catch (error) {
-        toast(error.message);
-        button.disabled = false;
-      }
-    });
-  });
-}
-
-async function loadPatientDashboard() {
-  if (!currentUser) return;
-  const upcomingBox = $("#dashboard-upcoming");
-  const historyBox = $("#dashboard-history");
-  $("#upcoming-count").textContent = "Atualizando...";
-  try {
-    const result = await api("/api/appointments");
-    const now = Date.now();
-    const upcoming = result.appointments.filter((item) =>
-      item.status === "SCHEDULED" && new Date(item.startsAt).getTime() >= now
-    ).sort((a,b) => new Date(a.startsAt)-new Date(b.startsAt));
-    const history = result.appointments.filter((item) =>
-      item.status !== "SCHEDULED" || new Date(item.startsAt).getTime() < now
-    ).sort((a,b) => new Date(b.startsAt)-new Date(a.startsAt));
-    $("#upcoming-count").textContent = upcoming.length + (upcoming.length === 1 ? " consulta agendada" : " consultas agendadas");
-    upcomingBox.innerHTML = upcoming.length ? upcoming.map((item) => appointmentCard(item,true)).join("") :
-      '<div class="dashboard-empty"><i data-lucide="calendar-heart"></i><p>Você não tem consultas futuras.</p><small>Quando agendar, seus próximos atendimentos aparecerão aqui.</small></div>';
-    historyBox.innerHTML = history.length ? history.map((item) => appointmentCard(item,false)).join("") :
-      '<div class="dashboard-empty compact"><i data-lucide="notebook-text"></i><p>Seu histórico aparecerá aqui.</p></div>';
-    bindCancelButtons(upcomingBox, loadPatientDashboard);
-    if (window.lucide) window.lucide.createIcons();
-  } catch (error) {
-    $("#upcoming-count").textContent = "Não foi possível atualizar";
-    upcomingBox.innerHTML = '<p class="form-error">Não foi possível carregar seus agendamentos. Tente atualizar.</p>';
-    historyBox.innerHTML = "";
-  }
-}
-
 async function loadAppointments(openAfterLoad = true) {
   if (!currentUser) { openDialog("#auth-dialog"); return; }
   try {
@@ -355,7 +304,6 @@ async function loadAppointments(openAfterLoad = true) {
       ? result.appointments.map((item) => appointmentCard(item,item.status === "SCHEDULED")).join("")
       : "<p>Você ainda não possui agendamentos.</p>";
     bindCancelButtons($("#appointments-list"), async () => {
-      await loadPatientDashboard();
       await loadAppointments(false);
     });
     if (window.lucide) window.lucide.createIcons();
@@ -460,4 +408,5 @@ async function loadVaccines() {
 if (window.lucide) window.lucide.createIcons();
 initScrollReveal();
 restoreSession();
+if (new URLSearchParams(window.location.search).get("login") === "required") openDialog("#auth-dialog");
 loadVaccines();

@@ -17,11 +17,11 @@
         <a class="brand" href="#" aria-label="Saúde Perto - início"><span class="brand-mark"><i
                     data-lucide="heart-pulse"></i></span><span>Saúde <b>Perto</b><small>Portal do
                     cidadão</small></span></a>
-        <nav class="desktop-nav" aria-label="Navegação principal"><a href="#servicos">Serviços</a><a
-                href="#vacinas">Vacinação</a><a href="#informacoes">Informações</a></nav>
+        <nav class="desktop-nav" aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#vacinas">Vacinação</a><a href="#informacoes">Sobre o portal</a><a href="#servicos">Agendamentos</a></nav>
         <div class="top-actions">
             <button class="text-button" id="font-toggle" type="button">A+ Texto</button>
             <button class="button button-outline" id="login-open" type="button">Entrar</button>
+            <button class="button button-primary" id="register-open-top" type="button">Criar conta</button>
             <button class="button button-outline" id="logout-button" type="button" hidden>Sair</button>
             <button class="menu-mobile-toggle" id="menu-mobile-toggle" type="button" aria-label="Abrir menu"
                 aria-expanded="false" aria-controls="menu-mobile"><i data-lucide="menu"></i></button>
@@ -40,12 +40,15 @@
                     data-lucide="chevron-right"></i></a>
             <a href="#vacinas"><i data-lucide="syringe"></i><span>Vacinação</span><i
                     data-lucide="chevron-right"></i></a>
-            <a href="#informacoes"><i data-lucide="info"></i><span>Informações</span><i
-                    data-lucide="chevron-right"></i></a>
+            <a href="#informacoes"><i data-lucide="info"></i><span>Sobre o portal</span><i data-lucide="chevron-right"></i></a>
+            <a href="/conta.html" id="mobile-dashboard-link" hidden><i data-lucide="layout-dashboard"></i><span>Meu painel</span><i data-lucide="chevron-right"></i></a>
+            <a href="/conta.html#dados" id="mobile-profile-link" hidden><i data-lucide="id-card"></i><span>Meus dados</span><i data-lucide="chevron-right"></i></a>
+            <a href="/conta.html#historico" id="mobile-history-link" hidden><i data-lucide="history"></i><span>Histórico de atendimentos</span><i data-lucide="chevron-right"></i></a>
         </div>
         <div class="mobile-menu-divider"></div>
-        <button type="button" class="mobile-menu-action" id="mobile-login"><i data-lucide="user-round"></i>Entrar na
-            minha conta</button>
+        <button type="button" class="mobile-menu-action" id="mobile-login"><i data-lucide="user-round"></i>Entrar na minha conta</button>
+        <button type="button" class="mobile-menu-action" id="mobile-register"><i data-lucide="user-plus"></i>Criar minha conta</button>
+        <button type="button" class="mobile-menu-action" id="mobile-logout" hidden><i data-lucide="log-out"></i>Sair da conta</button>
         <button type="button" class="mobile-menu-action" id="mobile-font"><i data-lucide="type"></i>Aumentar
             texto</button>
         <div class="mobile-menu-footer"><i data-lucide="heart-pulse"></i><span>Saúde Perto — Cuidado mais
@@ -58,9 +61,8 @@
                 <h1>Cuidar da sua saúde ficou <span>mais perto.</span></h1>
                 <p>Consulte informações, acompanhe a vacinação e organize seu atendimento na unidade de saúde sem
                     precisar enfrentar filas desnecessárias.</p>
-                <div class="hero-actions"><button class="button button-primary" id="schedule-open"><i
-                            data-lucide="calendar-plus"></i> Agendar consulta</button><a class="button button-light"
-                        href="#vacinas">Consultar vacinas</a></div>
+                <div class="hero-actions"><button class="button button-primary" id="schedule-open"><i data-lucide="calendar-plus"></i> Agendar consulta</button><a class="button button-light" href="#vacinas">Consultar vacinas</a></div>
+                <button class="hero-register-link" id="hero-register-open" type="button">Ainda não tem cadastro? <b>Crie sua conta gratuitamente</b> <i data-lucide="arrow-right"></i></button>
                 <p class="hero-note"><i data-lucide="info"></i> Em caso de urgência, procure atendimento presencial ou
                     ligue 192 (SAMU).</p>
             </div>
@@ -68,36 +70,6 @@
                 <div class="art-circle"><i data-lucide="heart-pulse"></i></div>
                 <div class="art-card"><i data-lucide="calendar-check"></i><span><b>Mais facilidade</b><small>Serviços em
                             um só lugar</small></span></div>
-            </div>
-        </section>
-        <section class="citizen-dashboard" id="patient-dashboard" hidden aria-labelledby="dashboard-title">
-            <div class="dashboard-heading">
-                <div><span class="eyebrow"><i data-lucide="user-round"></i> Área do cidadão</span>
-                    <h2 id="dashboard-title">Olá, <span id="patient-name">pessoa</span>!</h2>
-                    <p>Acompanhe seus atendimentos e confira seus dados.</p>
-                </div>
-                <button class="button button-outline" id="dashboard-refresh" type="button"><i data-lucide="refresh-cw"></i> Atualizar</button>
-            </div>
-            <div class="dashboard-grid">
-                <article class="dashboard-panel profile-panel">
-                    <div class="dashboard-panel-title"><span class="dashboard-icon"><i data-lucide="id-card"></i></span><div><h3>Meus dados</h3><p>Informações da sua conta</p></div></div>
-                    <dl class="profile-details">
-                        <div><dt>E-mail</dt><dd id="patient-email">—</dd></div>
-                        <div><dt>CPF</dt><dd id="patient-cpf">—</dd></div>
-                        <div><dt>Cartão SUS</dt><dd id="patient-sus">Não informado</dd></div>
-                        <div><dt>Celular</dt><dd id="patient-phone">—</dd></div>
-                    </dl>
-                    <p class="dashboard-privacy"><i data-lucide="lock-keyhole"></i> Seus dados são exibidos somente na sua sessão.</p>
-                </article>
-                <article class="dashboard-panel appointment-summary">
-                    <div class="dashboard-panel-title"><span class="dashboard-icon green"><i data-lucide="calendar-check"></i></span><div><h3>Próximos atendimentos</h3><p id="upcoming-count">Carregando...</p></div></div>
-                    <div id="dashboard-upcoming" aria-live="polite"><p class="muted">Carregando seus agendamentos...</p></div>
-                    <button class="button button-primary" id="dashboard-schedule" type="button"><i data-lucide="calendar-plus"></i> Agendar consulta</button>
-                </article>
-                <article class="dashboard-panel history-panel">
-                    <div class="dashboard-panel-title"><span class="dashboard-icon blue"><i data-lucide="history"></i></span><div><h3>Histórico de atendimentos</h3><p>Consultas anteriores e cancelamentos</p></div></div>
-                    <div id="dashboard-history" aria-live="polite"><p class="muted">Carregando seu histórico...</p></div>
-                </article>
             </div>
         </section>
         <section class="trust-strip">
@@ -188,8 +160,7 @@
                     id="auth-otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000"></div>
             <p id="auth-error" class="form-error" role="alert"></p><button class="button button-primary full"
                 type="submit">Entrar com segurança</button>
-            <p class="dialog-switch">Ainda não tem conta? <button type="button" class="inline-link"
-                    id="register-open">Criar cadastro</button></p>
+            <p class="dialog-switch">É novo por aqui? <button type="button" class="inline-link" id="register-open">Criar minha conta</button></p>
         </form>
     </dialog>
     <dialog id="register-dialog" aria-labelledby="register-title">
@@ -207,6 +178,7 @@
                     Privacidade</a>.</label>
             <p id="register-error" class="form-error" role="alert"></p><button class="button button-primary full"
                 type="submit">Criar minha conta</button>
+            <p class="dialog-switch">Já possui cadastro? <button type="button" class="inline-link" id="login-from-register">Entrar na minha conta</button></p>
         </form>
     </dialog>
     <dialog id="schedule-dialog" aria-labelledby="schedule-title">
