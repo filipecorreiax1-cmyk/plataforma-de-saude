@@ -754,3 +754,5 @@ input:focus, select:focus, .staff-form textarea:focus {
  .admin-sidebar-nav{grid-template-columns:1fr}
  .admin-sidebar-nav a{padding:12px}
 }
+
+.admin-sidebar[hidden],.admin-menu-toggle[hidden]{display:none!important}
