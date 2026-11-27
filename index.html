@@ -70,6 +70,36 @@
                             um só lugar</small></span></div>
             </div>
         </section>
+        <section class="citizen-dashboard" id="patient-dashboard" hidden aria-labelledby="dashboard-title">
+            <div class="dashboard-heading">
+                <div><span class="eyebrow"><i data-lucide="user-round"></i> Área do cidadão</span>
+                    <h2 id="dashboard-title">Olá, <span id="patient-name">pessoa</span>!</h2>
+                    <p>Acompanhe seus atendimentos e confira seus dados.</p>
+                </div>
+                <button class="button button-outline" id="dashboard-refresh" type="button"><i data-lucide="refresh-cw"></i> Atualizar</button>
+            </div>
+            <div class="dashboard-grid">
+                <article class="dashboard-panel profile-panel">
+                    <div class="dashboard-panel-title"><span class="dashboard-icon"><i data-lucide="id-card"></i></span><div><h3>Meus dados</h3><p>Informações da sua conta</p></div></div>
+                    <dl class="profile-details">
+                        <div><dt>E-mail</dt><dd id="patient-email">—</dd></div>
+                        <div><dt>CPF</dt><dd id="patient-cpf">—</dd></div>
+                        <div><dt>Cartão SUS</dt><dd id="patient-sus">Não informado</dd></div>
+                        <div><dt>Celular</dt><dd id="patient-phone">—</dd></div>
+                    </dl>
+                    <p class="dashboard-privacy"><i data-lucide="lock-keyhole"></i> Seus dados são exibidos somente na sua sessão.</p>
+                </article>
+                <article class="dashboard-panel appointment-summary">
+                    <div class="dashboard-panel-title"><span class="dashboard-icon green"><i data-lucide="calendar-check"></i></span><div><h3>Próximos atendimentos</h3><p id="upcoming-count">Carregando...</p></div></div>
+                    <div id="dashboard-upcoming" aria-live="polite"><p class="muted">Carregando seus agendamentos...</p></div>
+                    <button class="button button-primary" id="dashboard-schedule" type="button"><i data-lucide="calendar-plus"></i> Agendar consulta</button>
+                </article>
+                <article class="dashboard-panel history-panel">
+                    <div class="dashboard-panel-title"><span class="dashboard-icon blue"><i data-lucide="history"></i></span><div><h3>Histórico de atendimentos</h3><p>Consultas anteriores e cancelamentos</p></div></div>
+                    <div id="dashboard-history" aria-live="polite"><p class="muted">Carregando seu histórico...</p></div>
+                </article>
+            </div>
+        </section>
         <section class="trust-strip">
             <div><i data-lucide="smartphone"></i><span><b>Feito para celular</b><small>Acesse de onde
                         estiver</small></span></div>
