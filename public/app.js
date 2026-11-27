@@ -9,6 +9,16 @@ function setAuthenticatedUser(user) {
 
   loginButton.textContent = currentUser ? "Minha conta" : "Entrar";
   logoutButton.hidden = !currentUser;
+  const dashboard = $("#patient-dashboard");
+  if (dashboard) dashboard.hidden = !currentUser;
+  if (currentUser) {
+    $("#patient-name").textContent = currentUser.name || "cidadão";
+    $("#patient-email").textContent = currentUser.email || "—";
+    $("#patient-cpf").textContent = currentUser.cpf || "—";
+    $("#patient-sus").textContent = currentUser.susCard || "Não informado";
+    $("#patient-phone").textContent = currentUser.phone || "—";
+    loadPatientDashboard();
+  }
   if (mobileLogin) {
     mobileLogin.innerHTML = currentUser
       ? '<i data-lucide="user-round"></i>Minha conta'
@@ -122,6 +132,8 @@ $("#logout-button").addEventListener("click", async () => {
 $("#schedule-open").addEventListener("click", startSchedule);
 $("#service-schedule").addEventListener("click", startSchedule);
 $("#my-appointments").addEventListener("click", loadAppointments);
+$("#dashboard-refresh").addEventListener("click", loadPatientDashboard);
+$("#dashboard-schedule").addEventListener("click", startSchedule);
 
 $("#register-open").addEventListener("click", () => {
   closeDialog("#auth-dialog");
@@ -272,44 +284,83 @@ $("#schedule-form").addEventListener("submit", async (event) => {
   }
 });
 
+function appointmentStatusLabel(status) {
+  return ({SCHEDULED:"Agendada",CANCELLED:"Cancelada",COMPLETED:"Concluída",NO_SHOW:"Não compareceu"})[status] || status;
+}
+
+function appointmentCard(appointment, allowCancel = false) {
+  const date = new Date(appointment.startsAt);
+  return '<article class="dashboard-appointment"><div class="dashboard-appointment-top"><b>' +
+    escapeHtml(appointment.specialty) + '</b><span class="status-pill status-' +
+    escapeHtml(appointment.status.toLowerCase()) + '">' + escapeHtml(appointmentStatusLabel(appointment.status)) +
+    '</span></div><p><i data-lucide="calendar"></i>' +
+    escapeHtml(date.toLocaleString("pt-BR", {dateStyle:"short",timeStyle:"short"})) +
+    '</p><p><i data-lucide="map-pin"></i>' + escapeHtml(appointment.unit) +
+    '</p><p><i data-lucide="user-round"></i>' + escapeHtml(appointment.doctor) + '</p>' +
+    (allowCancel && appointment.status === "SCHEDULED"
+      ? '<button class="button button-outline" type="button" data-cancel="' + escapeHtml(appointment.id) + '">Cancelar agendamento</button>' : '') +
+    '</article>';
+}
+
+function bindCancelButtons(container, onSuccess) {
+  container.querySelectorAll("[data-cancel]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!window.confirm("Deseja cancelar este agendamento?")) return;
+      button.disabled = true;
+      try {
+        await api("/api/appointments/" + encodeURIComponent(button.dataset.cancel) + "/cancel", {method:"PATCH"});
+        toast("Agendamento cancelado.");
+        await onSuccess();
+      } catch (error) {
+        toast(error.message);
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadPatientDashboard() {
+  if (!currentUser) return;
+  const upcomingBox = $("#dashboard-upcoming");
+  const historyBox = $("#dashboard-history");
+  $("#upcoming-count").textContent = "Atualizando...";
+  try {
+    const result = await api("/api/appointments");
+    const now = Date.now();
+    const upcoming = result.appointments.filter((item) =>
+      item.status === "SCHEDULED" && new Date(item.startsAt).getTime() >= now
+    ).sort((a,b) => new Date(a.startsAt)-new Date(b.startsAt));
+    const history = result.appointments.filter((item) =>
+      item.status !== "SCHEDULED" || new Date(item.startsAt).getTime() < now
+    ).sort((a,b) => new Date(b.startsAt)-new Date(a.startsAt));
+    $("#upcoming-count").textContent = upcoming.length + (upcoming.length === 1 ? " consulta agendada" : " consultas agendadas");
+    upcomingBox.innerHTML = upcoming.length ? upcoming.map((item) => appointmentCard(item,true)).join("") :
+      '<div class="dashboard-empty"><i data-lucide="calendar-heart"></i><p>Você não tem consultas futuras.</p><small>Quando agendar, seus próximos atendimentos aparecerão aqui.</small></div>';
+    historyBox.innerHTML = history.length ? history.map((item) => appointmentCard(item,false)).join("") :
+      '<div class="dashboard-empty compact"><i data-lucide="notebook-text"></i><p>Seu histórico aparecerá aqui.</p></div>';
+    bindCancelButtons(upcomingBox, loadPatientDashboard);
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    $("#upcoming-count").textContent = "Não foi possível atualizar";
+    upcomingBox.innerHTML = '<p class="form-error">Não foi possível carregar seus agendamentos. Tente atualizar.</p>';
+    historyBox.innerHTML = "";
+  }
+}
+
 async function loadAppointments() {
+  if (!currentUser) { openDialog("#auth-dialog"); return; }
   try {
     const result = await api("/api/appointments");
     $("#appointments-list").innerHTML = result.appointments.length
-      ? result.appointments.map((appointment) =>
-        '<article class="appointment-row"><b>' + escapeHtml(appointment.specialty) +
-        "</b><p>" + new Date(appointment.startsAt).toLocaleString("pt-BR") +
-        " · " + escapeHtml(appointment.unit) + "</p><p>Profissional: " +
-        escapeHtml(appointment.doctor) + "</p><p>Status: " +
-        escapeHtml(
-          appointment.status === "SCHEDULED" ? "Agendada" :
-            appointment.status === "CANCELLED" ? "Cancelada" :
-              appointment.status === "COMPLETED" ? "Concluída" :
-                appointment.status === "NO_SHOW" ? "Não compareceu" :
-                  appointment.status
-        ) + "</p>" +
-        (appointment.status === "SCHEDULED"
-          ? '<button class="button button-outline" data-cancel="' + appointment.id +
-          '">Cancelar agendamento</button>' : "") + "</article>"
-      ).join("")
+      ? result.appointments.map((item) => appointmentCard(item,item.status === "SCHEDULED")).join("")
       : "<p>Você ainda não possui agendamentos.</p>";
-
-    $("#appointments-list").querySelectorAll("[data-cancel]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        if (!window.confirm("Deseja cancelar este agendamento?")) return;
-        try {
-          await api("/api/appointments/" + button.dataset.cancel + "/cancel", { method: "PATCH" });
-          toast("Agendamento cancelado.");
-          await loadAppointments();
-        } catch (error) {
-          toast(error.message);
-        }
-      });
+    bindCancelButtons($("#appointments-list"), async () => {
+      await loadPatientDashboard();
+      await loadAppointments();
     });
+    if (window.lucide) window.lucide.createIcons();
     openDialog("#appointments-dialog");
-  } catch {
-    openDialog("#auth-dialog");
-  }
+  } catch (error) { toast(error.message); }
 }
 
 async function loadVaccines() {
