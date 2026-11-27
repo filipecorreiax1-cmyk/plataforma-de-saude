@@ -116,7 +116,7 @@ $("#font-toggle").addEventListener("click", () => {
 });
 
 $("#login-open").addEventListener("click", () => {
-  if (currentUser) loadAppointments();
+  if (currentUser) $("#patient-dashboard").scrollIntoView({behavior:"smooth",block:"start"});
   else openDialog("#auth-dialog");
 });
 
@@ -347,7 +347,7 @@ async function loadPatientDashboard() {
   }
 }
 
-async function loadAppointments() {
+async function loadAppointments(openAfterLoad = true) {
   if (!currentUser) { openDialog("#auth-dialog"); return; }
   try {
     const result = await api("/api/appointments");
@@ -356,10 +356,10 @@ async function loadAppointments() {
       : "<p>Você ainda não possui agendamentos.</p>";
     bindCancelButtons($("#appointments-list"), async () => {
       await loadPatientDashboard();
-      await loadAppointments();
+      await loadAppointments(false);
     });
     if (window.lucide) window.lucide.createIcons();
-    openDialog("#appointments-dialog");
+    if (openAfterLoad) openDialog("#appointments-dialog");
   } catch (error) { toast(error.message); }
 }
 
