@@ -7,11 +7,15 @@ function setAuthenticatedUser(user) {
   const logoutButton = $("#logout-button");
   const mobileLogin = $("#mobile-login");
 
-  loginButton.textContent = currentUser ? "Minha conta" : "Entrar";
+  const isPatient = Boolean(currentUser && currentUser.role === "PATIENT");
+  loginButton.textContent = isPatient ? "Meu painel" : "Entrar";
   logoutButton.hidden = !currentUser;
   const dashboard = $("#patient-dashboard");
-  if (dashboard) dashboard.hidden = !currentUser;
-  if (currentUser) {
+  if (dashboard) dashboard.hidden = !isPatient;
+  $("#desktop-dashboard-link").hidden = !isPatient;
+  $("#mobile-dashboard-link").hidden = !isPatient;
+  $("#register-open-top").hidden = Boolean(currentUser);
+  if (isPatient) {
     $("#patient-name").textContent = currentUser.name || "cidadão";
     $("#patient-email").textContent = currentUser.email || "—";
     $("#patient-cpf").textContent = currentUser.cpf || "—";
@@ -116,8 +120,23 @@ $("#font-toggle").addEventListener("click", () => {
 });
 
 $("#login-open").addEventListener("click", () => {
-  if (currentUser) $("#patient-dashboard").scrollIntoView({behavior:"smooth",block:"start"});
+  if (currentUser && currentUser.role === "PATIENT") $("#patient-dashboard").scrollIntoView({behavior:"smooth",block:"start"});
   else openDialog("#auth-dialog");
+});
+
+function openRegisterDialog() {
+  if (currentUser) return;
+  openDialog("#register-dialog");
+}
+$("#register-open-top").addEventListener("click", openRegisterDialog);
+$("#hero-register-open").addEventListener("click", openRegisterDialog);
+$("#mobile-register").addEventListener("click", () => {
+  document.getElementById("menu-mobile-close")?.click();
+  openRegisterDialog();
+});
+$("#login-from-register").addEventListener("click", () => {
+  closeDialog("#register-dialog");
+  openDialog("#auth-dialog");
 });
 
 $("#logout-button").addEventListener("click", async () => {
