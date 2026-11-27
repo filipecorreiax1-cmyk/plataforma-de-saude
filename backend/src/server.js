@@ -62,6 +62,26 @@ app.post("/api/admin/slots",auth(),roles("ADMIN"),async(req,res)=>{
   res.status(201).json({slot});
  }catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Este profissional já possui um horário cadastrado neste momento.":e.errors?.[0]?.message||"Não foi possível cadastrar o horário."})}
 });
+app.get("/api/admin/units",auth(),roles("ADMIN"),async(q,s)=>{
+ const units=await prisma.healthUnit.findMany({orderBy:[{municipality:"asc"},{name:"asc"}]});
+ s.json({units});
+});
+app.post("/api/admin/units",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({name:z.string().trim().min(3).max(120),address:z.string().trim().min(5).max(240),phone:z.string().trim().max(30).optional().default(""),municipality:z.string().trim().min(2).max(120),coverageArea:z.string().trim().max(240).optional().default("")}).parse(req.body);
+  const unit=await prisma.healthUnit.create({data:{...d,active:false}});
+  await log(req.user.id,"HEALTH_UNIT_CREATED","HealthUnit",unit.id);
+  res.status(201).json({unit,message:"Unidade cadastrada como Em preparação. Ative-a somente após revisar os dados."});
+ }catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Já existe uma unidade com esse nome.":e.errors?.[0]?.message||"Não foi possível cadastrar a unidade."})}
+});
+app.patch("/api/admin/units/:id",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({name:z.string().trim().min(3).max(120).optional(),address:z.string().trim().min(5).max(240).optional(),phone:z.string().trim().max(30).optional(),municipality:z.string().trim().min(2).max(120).optional(),coverageArea:z.string().trim().max(240).optional(),active:z.boolean().optional()}).refine(v=>Object.keys(v).length>0).parse(req.body);
+  const unit=await prisma.healthUnit.update({where:{id:req.params.id},data:d});
+  await log(req.user.id,d.active===undefined?"HEALTH_UNIT_UPDATED":d.active?"HEALTH_UNIT_ACTIVATED":"HEALTH_UNIT_DEACTIVATED","HealthUnit",unit.id);
+  res.json({unit});
+ }catch(e){res.status(e.code==="P2025"?404:e.code==="P2002"?409:400).json({error:e.code==="P2025"?"Unidade não encontrada.":e.code==="P2002"?"Já existe uma unidade com esse nome.":e.errors?.[0]?.message||"Não foi possível atualizar a unidade."})}
+});
 app.get("/api/admin/staff",auth(),roles("ADMIN"),async(q,s)=>{
  const staff=await prisma.user.findMany({where:{role:{in:["DOCTOR","NURSE","ADMIN"]}},select:{id:true,name:true,email:true,role:true,active:true,twoFactorOn:true},orderBy:{name:"asc"}});
  s.json({staff});

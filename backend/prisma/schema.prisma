@@ -102,3 +102,18 @@ model ScheduleSlot {
   @@unique([doctorId, startsAt])
   @@index([startsAt, isOpen])
 }
+
+
+model HealthUnit {
+  id           String   @id @default(uuid())
+  name         String
+  address      String
+  phone        String?
+  municipality String
+  coverageArea String?
+  active       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@unique([name, municipality])
+  @@index([municipality, active])
+}
