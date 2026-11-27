@@ -15,6 +15,7 @@ function setAuthenticatedUser(user) {
   $("#desktop-dashboard-link").hidden = !isPatient;
   $("#mobile-dashboard-link").hidden = !isPatient;
   $("#register-open-top").hidden = Boolean(currentUser);
+  $("#mobile-register").hidden = Boolean(currentUser);
   if (isPatient) {
     $("#patient-name").textContent = currentUser.name || "cidadão";
     $("#patient-email").textContent = currentUser.email || "—";
