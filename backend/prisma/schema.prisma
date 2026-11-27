@@ -106,7 +106,7 @@ model ScheduleSlot {
 
 model HealthUnit {
   id           String   @id @default(uuid())
-  name         String   @unique
+  name         String
   address      String
   phone        String?
   municipality String
@@ -114,5 +114,6 @@ model HealthUnit {
   active       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  @@unique([name, municipality])
   @@index([municipality, active])
 }
