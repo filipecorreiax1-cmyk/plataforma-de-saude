@@ -191,7 +191,7 @@ $("#auth-form").addEventListener("submit", async (event) => {
       window.location.href = "/staff.html";
       return;
     }
-    window.location.href = "/conta.html";
+    window.location.href = "/";
   } catch (error) {
     $("#auth-error").textContent = error.message;
     if (error.message.includes("Código de autenticação em duas etapas")) {
