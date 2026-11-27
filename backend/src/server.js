@@ -44,8 +44,8 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  await log(req.user.id,"STAFF_2FA_ENABLED","User",staff.id);
  res.json({message:"Autenticação em duas etapas ativada."});
 });
-app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,healthUnitAssignments:{some:{healthUnit:{active:true}}},availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},select:{id:true,name:true}});s.json({doctors})});
-app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{active:true}}}},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
+app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{is:{active:true}}}}},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
 app.get("/api/staff/slots",async(req,res)=>{
  const doctorId=String(req.query.doctorId||"");
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
