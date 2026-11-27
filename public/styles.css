@@ -345,3 +345,115 @@ input:focus, select:focus, .staff-form textarea:focus {
   .button, .service-card, .vaccine-card, .trust-strip > div,
   .info-list > div, .link-button { transition: none !important; }
 }
+
+
+/* Nova composição da apresentação principal */
+.hero {
+  min-height: 480px;
+  padding-top: 78px;
+  padding-bottom: 78px;
+}
+.hero-copy { max-width: 680px; }
+.hero-copy .eyebrow {
+  padding: 8px 12px;
+  border: 1px solid rgba(22,132,91,.15);
+  border-radius: 999px;
+  background: rgba(255,255,255,.58);
+}
+.hero-copy > p:not(.hero-note) {
+  max-width: 610px;
+  font-size: 17px;
+  line-height: 1.8;
+}
+.hero-actions { margin-top: 28px; }
+.hero-actions .button { min-height: 52px; padding-left: 22px; padding-right: 22px; }
+.hero-art {
+  width: min(34vw, 370px);
+  height: min(34vw, 370px);
+  min-width: 290px;
+  min-height: 290px;
+  margin-right: 2%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.95) 0 8%, transparent 8.5%),
+    radial-gradient(circle at 50% 50%, #e8f6f2 0%, #d3ebe5 65%, #c6e3dc 100%);
+  border: 1px solid rgba(8,127,140,.08);
+}
+.hero-art::before, .hero-art::after {
+  content: "";
+  position: absolute;
+  border: 1px solid rgba(8,127,140,.15);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero-art::before { inset: 20px; }
+.hero-art::after { inset: -17px; border-style: dashed; opacity: .65; }
+.art-circle {
+  width: 176px;
+  height: 176px;
+  color: #087f8c;
+  background: linear-gradient(145deg, #fff 0%, #f4fbf9 100%);
+  border: 1px solid rgba(8,127,140,.08);
+}
+.art-circle svg { width: 94px; height: 94px; stroke-width: 1.5; }
+.art-card {
+  z-index: 2;
+  min-width: 190px;
+  padding: 13px 15px;
+  border: 1px solid rgba(220,232,232,.9);
+  border-radius: 15px;
+}
+.art-card > svg { width: 23px; height: 23px; color: var(--teal); }
+.art-card-secondary {
+  left: -32px;
+  right: auto;
+  bottom: 37px;
+  min-width: 176px;
+}
+.hero-art-caption {
+  position: absolute;
+  right: 6px;
+  top: 28px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid rgba(220,232,232,.9);
+  border-radius: 999px;
+  background: rgba(255,255,255,.94);
+  color: #41636a;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(24,59,78,.07);
+}
+.hero-art-caption svg { width: 14px; height: 14px; color: #16845b; }
+@media (max-width: 900px) and (min-width: 761px) {
+  .hero { padding-left: 5vw; padding-right: 5vw; gap: 22px; }
+  .hero-art { min-width: 250px; min-height: 250px; }
+  .art-card-secondary { left: -18px; }
+}
+@media (max-width: 760px) {
+  .hero { padding: 48px 22px 38px; }
+  .hero-copy > p:not(.hero-note) { font-size: 15px; line-height: 1.75; }
+  .hero-art {
+    display: grid;
+    width: 250px;
+    height: 220px;
+    min-width: 0;
+    min-height: 0;
+    margin: 24px auto 8px;
+    border-radius: 48%;
+  }
+  .art-circle { width: 125px; height: 125px; }
+  .art-circle svg { width: 70px; height: 70px; }
+  .art-card { min-width: 160px; padding: 10px 12px; }
+  .art-card-secondary { left: -10px; bottom: 22px; min-width: 150px; }
+  .hero-art-caption { right: -5px; top: 8px; font-size: 10px; }
+  .hero-art::before { inset: 13px; }
+  .hero-art::after { inset: -9px; }
+}
+@media (max-width: 380px) {
+  .hero h1 { font-size: 34px; }
+  .hero-art { width: 220px; height: 205px; }
+  .art-card-secondary { left: -18px; }
+}
