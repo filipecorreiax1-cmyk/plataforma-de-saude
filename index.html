@@ -17,7 +17,7 @@
         <a class="brand" href="#" aria-label="Saúde Perto - início"><span class="brand-mark"><i
                     data-lucide="heart-pulse"></i></span><span>Saúde <b>Perto</b><small>Portal do
                     cidadão</small></span></a>
-        <nav class="desktop-nav" aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#vacinas">Vacinação</a><a href="#informacoes">Sobre o portal</a><a href="#patient-dashboard" id="desktop-dashboard-link" hidden>Meu painel</a></nav>
+        <nav class="desktop-nav" aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#vacinas">Vacinação</a><a href="#informacoes">Sobre o portal</a><a href="/conta.html" id="desktop-dashboard-link" hidden>Meu painel</a></nav>
         <div class="top-actions">
             <button class="text-button" id="font-toggle" type="button">A+ Texto</button>
             <button class="button button-outline" id="login-open" type="button">Entrar</button>
@@ -41,11 +41,14 @@
             <a href="#vacinas"><i data-lucide="syringe"></i><span>Vacinação</span><i
                     data-lucide="chevron-right"></i></a>
             <a href="#informacoes"><i data-lucide="info"></i><span>Sobre o portal</span><i data-lucide="chevron-right"></i></a>
-            <a href="#patient-dashboard" id="mobile-dashboard-link" hidden><i data-lucide="user-round"></i><span>Meu painel</span><i data-lucide="chevron-right"></i></a>
+            <a href="/conta.html" id="mobile-dashboard-link" hidden><i data-lucide="layout-dashboard"></i><span>Meu painel</span><i data-lucide="chevron-right"></i></a>
+            <a href="/conta.html#dados" id="mobile-profile-link" hidden><i data-lucide="id-card"></i><span>Meus dados</span><i data-lucide="chevron-right"></i></a>
+            <a href="/conta.html#historico" id="mobile-history-link" hidden><i data-lucide="history"></i><span>Histórico de atendimentos</span><i data-lucide="chevron-right"></i></a>
         </div>
         <div class="mobile-menu-divider"></div>
         <button type="button" class="mobile-menu-action" id="mobile-login"><i data-lucide="user-round"></i>Entrar na minha conta</button>
         <button type="button" class="mobile-menu-action" id="mobile-register"><i data-lucide="user-plus"></i>Criar minha conta</button>
+        <button type="button" class="mobile-menu-action" id="mobile-logout" hidden><i data-lucide="log-out"></i>Sair da conta</button>
         <button type="button" class="mobile-menu-action" id="mobile-font"><i data-lucide="type"></i>Aumentar
             texto</button>
         <div class="mobile-menu-footer"><i data-lucide="heart-pulse"></i><span>Saúde Perto — Cuidado mais
@@ -67,36 +70,6 @@
                 <div class="art-circle"><i data-lucide="heart-pulse"></i></div>
                 <div class="art-card"><i data-lucide="calendar-check"></i><span><b>Mais facilidade</b><small>Serviços em
                             um só lugar</small></span></div>
-            </div>
-        </section>
-        <section class="citizen-dashboard" id="patient-dashboard" hidden aria-labelledby="dashboard-title">
-            <div class="dashboard-heading">
-                <div><span class="eyebrow"><i data-lucide="user-round"></i> Área do cidadão</span>
-                    <h2 id="dashboard-title">Olá, <span id="patient-name">pessoa</span>!</h2>
-                    <p>Acompanhe seus atendimentos e confira seus dados.</p>
-                </div>
-                <button class="button button-outline" id="dashboard-refresh" type="button"><i data-lucide="refresh-cw"></i> Atualizar</button>
-            </div>
-            <div class="dashboard-grid">
-                <article class="dashboard-panel profile-panel">
-                    <div class="dashboard-panel-title"><span class="dashboard-icon"><i data-lucide="id-card"></i></span><div><h3>Meus dados</h3><p>Informações da sua conta</p></div></div>
-                    <dl class="profile-details">
-                        <div><dt>E-mail</dt><dd id="patient-email">—</dd></div>
-                        <div><dt>CPF</dt><dd id="patient-cpf">—</dd></div>
-                        <div><dt>Cartão SUS</dt><dd id="patient-sus">Não informado</dd></div>
-                        <div><dt>Celular</dt><dd id="patient-phone">—</dd></div>
-                    </dl>
-                    <p class="dashboard-privacy"><i data-lucide="lock-keyhole"></i> Seus dados são exibidos somente na sua sessão.</p>
-                </article>
-                <article class="dashboard-panel appointment-summary">
-                    <div class="dashboard-panel-title"><span class="dashboard-icon green"><i data-lucide="calendar-check"></i></span><div><h3>Próximos atendimentos</h3><p id="upcoming-count">Carregando...</p></div></div>
-                    <div id="dashboard-upcoming" aria-live="polite"><p class="muted">Carregando seus agendamentos...</p></div>
-                    <button class="button button-primary" id="dashboard-schedule" type="button"><i data-lucide="calendar-plus"></i> Agendar consulta</button>
-                </article>
-                <article class="dashboard-panel history-panel">
-                    <div class="dashboard-panel-title"><span class="dashboard-icon blue"><i data-lucide="history"></i></span><div><h3>Histórico de atendimentos</h3><p>Consultas anteriores e cancelamentos</p></div></div>
-                    <div id="dashboard-history" aria-live="polite"><p class="muted">Carregando seu histórico...</p></div>
-                </article>
             </div>
         </section>
         <section class="trust-strip">
