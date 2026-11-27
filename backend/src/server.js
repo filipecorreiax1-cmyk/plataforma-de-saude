@@ -45,6 +45,7 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  res.json({message:"Autenticação em duas etapas ativada."});
 });
 app.get("/api/staff/doctors",async(q,s)=>{const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/units",async(q,s)=>{try{const rows=await prisma.scheduleSlot.findMany({where:{isOpen:true,startsAt:{gt:new Date()}},distinct:["unit"],orderBy:{unit:"asc"},select:{unit:true}});s.json({units:rows.map(row=>row.unit)});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
 app.get("/api/staff/slots",async(req,res)=>{
  const doctorId=String(req.query.doctorId||"");
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
