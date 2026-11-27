@@ -9,7 +9,7 @@ if(currentUser.role==="ADMIN"){
  $("#admin-area").hidden=false;
  if(!currentUser.twoFactorOn){
   $("#staff-select").innerHTML='<option value="'+currentUser.id+'">Minha conta administradora</option>';
-  $("#staff-form").hidden=true;$("#slot-form").parentElement.hidden=true;$("#admin-appointments").parentElement.hidden=true;
+  $("#staff-form").hidden=true;$("#unit-management").hidden=true;$("#slot-form").parentElement.hidden=true;$("#admin-appointments").parentElement.hidden=true;
   $("#twofa-message").textContent="Antes de administrar o sistema, ative o segundo fator da sua própria conta.";
  }else{
   await Promise.all([loadStaff(),loadDoctors(),loadAdminAppointments(),loadUnits()]);
