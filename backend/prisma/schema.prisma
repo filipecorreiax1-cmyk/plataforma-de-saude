@@ -39,6 +39,7 @@ model User {
   doctorAppointments  Appointment[] @relation("DoctorAppointments")
   auditEvents     AuditEvent[]
   availableSlots  ScheduleSlot[]
+  healthUnitAssignments HealthUnitDoctor[]
 }
 
 model Appointment {
@@ -98,9 +99,12 @@ model ScheduleSlot {
   isOpen    Boolean      @default(true)
   createdAt DateTime     @default(now())
   doctor    User         @relation(fields: [doctorId], references: [id])
+  healthUnitId String?
+  healthUnit HealthUnit? @relation(fields: [healthUnitId], references: [id], onDelete: SetNull)
   appointment Appointment?
   @@unique([doctorId, startsAt])
   @@index([startsAt, isOpen])
+  @@index([healthUnitId, startsAt, isOpen])
 }
 
 
@@ -114,6 +118,19 @@ model HealthUnit {
   active       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  doctors      HealthUnitDoctor[]
+  scheduleSlots ScheduleSlot[]
   @@unique([name, municipality])
   @@index([municipality, active])
+}
+
+model HealthUnitDoctor {
+  id          String     @id @default(uuid())
+  healthUnitId String
+  doctorId    String
+  createdAt   DateTime   @default(now())
+  healthUnit  HealthUnit @relation(fields: [healthUnitId], references: [id], onDelete: Cascade)
+  doctor      User       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  @@unique([healthUnitId, doctorId])
+  @@index([doctorId])
 }
