@@ -114,3 +114,21 @@ body.mobile-menu-open .mobile-menu { transform:translateX(0); visibility:visible
 
 /* Controles de sessão: respeita o atributo hidden nos botões do cabeçalho. */
 .top-actions [hidden] { display: none !important; }
+
+
+/* Indicador de processamento nos botões de ação */
+.button-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-spinner-rotate .7s linear infinite;
+}
+.button[aria-busy="true"] { cursor: wait; opacity: .88; }
+@keyframes button-spinner-rotate { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .button-spinner { animation-duration: 1.8s; }
+}
