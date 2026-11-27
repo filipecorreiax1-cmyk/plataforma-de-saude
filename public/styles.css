@@ -520,3 +520,17 @@ input:focus, select:focus, .staff-form textarea:focus {
   .top-actions #login-open { min-height:42px; padding:8px 11px; font-size:12px; }
   .top-actions #register-open-top { padding:8px 10px; }
 }
+
+
+/* Área pessoal separada da página inicial */
+.account-page{min-height:65vh;padding:54px max(5vw,20px) 68px;background:linear-gradient(180deg,#f2f9f7 0%,#fff 48%)}
+.account-welcome,.account-grid{max-width:1120px;margin:0 auto}
+.account-welcome{margin-bottom:28px}.account-welcome h1{margin:10px 0;font-size:clamp(30px,4vw,42px);color:var(--ink)}
+.account-welcome h1 span{color:var(--teal)}.account-welcome p{color:var(--muted);margin:0}
+.account-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;align-items:start}
+.account-history{grid-column:1/-1;scroll-margin-top:90px}
+.account-history #account-history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+.account-history .dashboard-panel-title{justify-content:space-between}
+.account-history .dashboard-panel-title>div{margin-right:auto}
+.account-upcoming>.button{margin-top:12px}
+@media(max-width:760px){.account-page{padding:36px 18px 48px}.account-grid{grid-template-columns:1fr}.account-history{grid-column:auto}.account-history #account-history-list{grid-template-columns:1fr}.account-history .dashboard-panel-title{flex-wrap:wrap}}
