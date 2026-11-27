@@ -84,7 +84,11 @@ app.post("/api/admin/units",auth(),roles("ADMIN"),async(req,res)=>{
 app.patch("/api/admin/units/:id",auth(),roles("ADMIN"),async(req,res)=>{
  try{
   const d=z.object({name:z.string().trim().min(3).max(120).optional(),address:z.string().trim().min(5).max(240).optional(),phone:z.string().trim().max(30).optional(),municipality:z.string().trim().min(2).max(120).optional(),coverageArea:z.string().trim().max(240).optional(),active:z.boolean().optional()}).refine(v=>Object.keys(v).length>0).parse(req.body);
-  const unit=await prisma.healthUnit.update({where:{id:req.params.id},data:d});
+  const unit=await prisma.$transaction(async tx=>{
+   const updated=await tx.healthUnit.update({where:{id:req.params.id},data:d});
+   if(d.active===false)await tx.scheduleSlot.updateMany({where:{healthUnitId:updated.id,isOpen:true,startsAt:{gt:new Date()}},data:{isOpen:false}});
+   return updated;
+  });
   await log(req.user.id,d.active===undefined?"HEALTH_UNIT_UPDATED":d.active?"HEALTH_UNIT_ACTIVATED":"HEALTH_UNIT_DEACTIVATED","HealthUnit",unit.id);
   res.json({unit});
  }catch(e){res.status(e.code==="P2025"?404:e.code==="P2002"?409:400).json({error:e.code==="P2025"?"Unidade não encontrada.":e.code==="P2002"?"Já existe uma unidade com esse nome.":e.errors?.[0]?.message||"Não foi possível atualizar a unidade."})}
@@ -112,6 +116,20 @@ app.delete("/api/admin/units/:id/doctors/:doctorId",auth(),roles("ADMIN"),async(
 app.get("/api/admin/staff",auth(),roles("ADMIN"),async(q,s)=>{
  const staff=await prisma.user.findMany({where:{role:{in:["DOCTOR","NURSE","ADMIN"]}},select:{id:true,name:true,email:true,role:true,active:true,twoFactorOn:true},orderBy:{name:"asc"}});
  s.json({staff});
+});
+app.patch("/api/admin/staff/:id/status",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const {active}=z.object({active:z.boolean()}).parse(req.body);
+  const staff=await prisma.user.findUnique({where:{id:req.params.id}});
+  if(!staff||!["DOCTOR","NURSE"].includes(staff.role))return res.status(404).json({error:"Profissional não encontrado."});
+  if(staff.id===req.user.id)return res.status(400).json({error:"Não é permitido desativar a própria conta por esta função."});
+  await prisma.$transaction(async tx=>{
+   await tx.user.update({where:{id:staff.id},data:{active}});
+   if(!active&&staff.role==="DOCTOR")await tx.scheduleSlot.updateMany({where:{doctorId:staff.id,isOpen:true,startsAt:{gt:new Date()}},data:{isOpen:false}});
+  });
+  await log(req.user.id,active?"STAFF_REACTIVATED":"STAFF_DEACTIVATED","User",staff.id);
+  res.json({message:active?"Profissional reativado. Revise e publique novos horários quando estiver pronto.":"Profissional desativado. Novos agendamentos foram bloqueados; consultas existentes e histórico foram preservados."});
+ }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível alterar a situação do profissional."})}
 });
 app.post("/api/admin/staff",auth(),roles("ADMIN"),async(req,res)=>{
  try{
