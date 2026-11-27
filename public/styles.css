@@ -497,6 +497,7 @@ input:focus, select:focus, .staff-form textarea:focus {
 /* Organização de acesso e navegação — Saúde Perto */
 .top-actions #register-open-top { box-shadow: 0 5px 14px rgba(8,127,140,.14); }
 .top-actions #register-open-top[hidden] { display:none!important; }
+#mobile-register[hidden] { display:none!important; }
 .hero-register-link {
   display:inline-flex; align-items:center; flex-wrap:wrap; gap:5px;
   margin:17px 0 0; padding:5px 0; border:0; background:transparent;
