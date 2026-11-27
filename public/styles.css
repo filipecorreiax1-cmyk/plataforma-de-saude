@@ -155,3 +155,193 @@ body.mobile-menu-open .mobile-menu { transform:translateX(0); visibility:visible
     will-change: auto;
   }
 }
+
+
+/* Refinamento visual — Saúde Perto */
+:root {
+  --teal: #087f8c;
+  --green: #16845b;
+  --ink: #183b4e;
+  --muted: #607782;
+  --line: #dce8e8;
+  --surface: #ffffff;
+  --surface-soft: #f5faf9;
+  --shadow-soft: 0 10px 30px rgba(24, 59, 78, .07);
+  --shadow-hover: 0 18px 42px rgba(24, 59, 78, .13);
+}
+body {
+  color: var(--ink);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.topbar {
+  border-bottom-color: rgba(220, 232, 232, .8);
+}
+.brand-mark {
+  box-shadow: inset 0 0 0 1px rgba(8, 127, 140, .08);
+}
+.button {
+  border-radius: 12px;
+  min-height: 48px;
+  padding: 12px 20px;
+  letter-spacing: .005em;
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease, border-color .22s ease;
+}
+.button-primary {
+  background: linear-gradient(135deg, #087f8c 0%, #0b9293 100%);
+  box-shadow: 0 7px 16px rgba(8, 127, 140, .18);
+}
+.button-primary:hover {
+  background: linear-gradient(135deg, #066f79 0%, #087f8c 100%);
+  box-shadow: 0 10px 22px rgba(8, 127, 140, .24);
+  transform: translateY(-2px);
+}
+.button-outline:hover, .button-light:hover {
+  border-color: #8bc8c6;
+  background: #f1f9f8;
+  transform: translateY(-2px);
+}
+.button:active { transform: translateY(0) scale(.985); }
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 82% 18%, rgba(255,255,255,.82) 0, rgba(255,255,255,0) 32%),
+    linear-gradient(120deg, #edf8f6 0%, #e5f3f1 52%, #f2f8f7 100%);
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 360px;
+  height: 360px;
+  right: 8%;
+  bottom: -245px;
+  border: 1px solid rgba(8,127,140,.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 34px rgba(8,127,140,.035), 0 0 0 70px rgba(8,127,140,.025);
+}
+.hero h1 { letter-spacing: -1.8px; }
+.hero-art {
+  background: radial-gradient(circle at 35% 30%, #e5f5f1 0%, #cce8e2 72%);
+  box-shadow: 0 24px 55px rgba(35, 104, 99, .10);
+}
+.art-circle {
+  box-shadow: 0 14px 35px rgba(24, 59, 78, .10);
+}
+.art-card {
+  box-shadow: var(--shadow-soft);
+}
+.trust-strip {
+  background: #fff;
+}
+.trust-strip > div {
+  transition: transform .22s ease;
+}
+.trust-strip > div:hover { transform: translateY(-3px); }
+.section, .vaccine-section { padding-top: 76px; padding-bottom: 76px; }
+.section-heading { margin-bottom: 32px; }
+.section h2, .vaccine-section h2, .info-section h2 {
+  letter-spacing: -.7px;
+}
+.service-card, .vaccine-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e3eded;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 5px 18px rgba(24, 59, 78, .035);
+  transition: transform .28s cubic-bezier(.22,1,.36,1), box-shadow .28s ease, border-color .28s ease;
+}
+.service-card::before, .vaccine-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #087f8c, #65b9a0);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.service-card:hover, .vaccine-card:hover {
+  transform: translateY(-6px);
+  border-color: #c6e2df;
+  box-shadow: var(--shadow-hover);
+}
+.service-card:hover::before, .vaccine-card:hover::before { opacity: 1; }
+.service-icon, .section-icon {
+  border-radius: 15px;
+  box-shadow: inset 0 0 0 1px rgba(8,127,140,.045);
+}
+.service-card h3, .vaccine-card h3 { letter-spacing: -.2px; }
+.link-button {
+  border-radius: 8px;
+  transition: gap .2s ease, color .2s ease;
+}
+.link-button:hover { gap: 11px; color: #066b75; }
+.vaccine-section {
+  background: linear-gradient(180deg, #f5faf9 0%, #f0f7f6 100%);
+}
+.calendar-panel {
+  border-color: #e3eded;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: var(--shadow-soft);
+}
+.event-item { padding: 15px 0; }
+.info-section { gap: 72px; }
+.info-list > div {
+  padding: 16px;
+  border: 1px solid #e8f0ef;
+  border-radius: 14px;
+  background: #fff;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.info-list > div:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-soft);
+}
+footer { background: linear-gradient(120deg, #173d4a 0%, #205565 100%); }
+dialog {
+  border-radius: 20px;
+  box-shadow: 0 28px 90px rgba(13, 41, 55, .25);
+}
+dialog form, .dialog-content { padding: 34px; }
+input, select, .staff-form textarea {
+  border-radius: 11px;
+  border-color: #cbdada;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+input:focus, select:focus, .staff-form textarea:focus {
+  border-color: #46a5a4;
+  box-shadow: 0 0 0 4px rgba(8,127,140,.10);
+  outline: none;
+}
+.appointment-row, .staff-form {
+  border-color: #e3eded;
+  border-radius: 15px;
+  box-shadow: 0 5px 18px rgba(24,59,78,.035);
+}
+.staff-welcome {
+  background: linear-gradient(120deg, #eaf6f4 0%, #e2f1ef 100%);
+  border: 1px solid #d7eae6;
+  border-radius: 18px;
+}
+@media (max-width: 760px) {
+  .section, .vaccine-section { padding-top: 52px; padding-bottom: 52px; }
+  .service-card, .vaccine-card { padding: 22px; }
+  .calendar-panel { padding: 20px; }
+  .info-section { gap: 26px; }
+  dialog form, .dialog-content { padding: 26px 22px; }
+}
+@media (hover: none) {
+  .service-card:hover, .vaccine-card:hover, .info-list > div:hover,
+  .button-primary:hover, .button-outline:hover, .button-light:hover {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button, .service-card, .vaccine-card, .trust-strip > div,
+  .info-list > div, .link-button { transition: none !important; }
+}
