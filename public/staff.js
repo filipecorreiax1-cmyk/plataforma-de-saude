@@ -9,7 +9,7 @@ if(currentUser.role==="ADMIN"){
  $("#admin-area").hidden=false;
  if(!currentUser.twoFactorOn){
   $("#staff-select").innerHTML='<option value="'+currentUser.id+'">Minha conta administradora</option>';
-  $("#staff-form").hidden=true;$("#unit-management").hidden=true;$("#slot-form").parentElement.hidden=true;$("#admin-appointments").parentElement.hidden=true;
+  $("#staff-form").hidden=true;$("#unit-management").hidden=true;$("#slot-form").parentElement.hidden=true;$("#admin-appointments").parentElement.hidden=true;$("#admin-sidebar").hidden=true;$("#admin-menu-toggle").hidden=true;
   $("#twofa-message").textContent="Antes de administrar o sistema, ative o segundo fator da sua própria conta.";
  }else{
   await Promise.all([loadStaff(),loadDoctors(),loadAdminAppointments(),loadUnits()]);
@@ -18,6 +18,8 @@ if(currentUser.role==="ADMIN"){
 if(currentUser.role==="NURSE")$("#vaccine-area").hidden=false;
 if(currentUser.role==="ADMIN"&&currentUser.twoFactorOn)$("#vaccine-area").hidden=false;
 }catch{location.replace("/?login=required")}}
+const adminMenuToggle=$("#admin-menu-toggle"),adminSidebar=$("#admin-sidebar");
+if(adminMenuToggle&&adminSidebar){adminMenuToggle.onclick=()=>{const open=adminSidebar.classList.toggle("open");adminMenuToggle.setAttribute("aria-expanded",String(open));adminMenuToggle.textContent=open?"× Fechar menu":"☰ Menu administrativo"};adminSidebar.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>{adminSidebar.querySelectorAll("a").forEach(a=>a.classList.remove("active"));link.classList.add("active");adminSidebar.classList.remove("open");adminMenuToggle.setAttribute("aria-expanded","false");adminMenuToggle.textContent="☰ Menu administrativo"}))}
 $("#logout").onclick=async()=>{try{await api("/api/auth/logout",{method:"POST"})}finally{location.replace("/")}};
 async function loadDoctorAppointments(){const d=await api("/api/appointments");$("#doctor-appointments").innerHTML=d.appointments.length?d.appointments.map(a=>'<article class="appointment-row"><b>'+esc(a.patient?.name||"Paciente")+'</b><p>'+new Date(a.startsAt).toLocaleString("pt-BR")+' · '+esc(a.specialty)+' · '+esc(a.unit)+'</p><p>CPF: '+esc(a.patient?.cpf||"—")+' · Cartão SUS: '+esc(a.patient?.susCard||"—")+'</p><p>Telefone: '+esc(a.patient?.phone||"—")+' · Status: '+esc(a.status)+'</p></article>').join(""):"<p>Nenhum atendimento vinculado à sua agenda.</p>"}
 async function loadAdminAppointments(){const d=await api("/api/appointments");$("#admin-appointments").innerHTML=d.appointments.map(a=>'<article class="appointment-row"><b>'+esc(a.patient?.name||"Paciente")+'</b><p>'+new Date(a.startsAt).toLocaleString("pt-BR")+' · '+esc(a.doctor)+' · '+esc(a.unit)+'</p><p>CPF: '+esc(a.patient?.cpf||"—")+' · Status: '+esc(a.status)+'</p></article>').join("")||"<p>Nenhum agendamento cadastrado.</p>"}
