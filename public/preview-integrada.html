@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#087f8c">
+<title>Prévia integrada — Saúde Perto</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#173b49;background:#f4f8f7;--teal:#087f8c;--green:#16845b;--muted:#647b83;--line:#dce8e7;--white:#fff}*{box-sizing:border-box}body{margin:0;line-height:1.5}.top{position:sticky;top:0;z-index:5;background:#ffffffed;backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px clamp(16px,5vw,64px);display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}.mark{width:42px;height:42px;border-radius:14px;background:#e3f3f0;color:var(--teal);display:grid;place-items:center;font-weight:900}.brand small{display:block;font-size:11px;color:var(--muted);font-weight:500}.top-right{display:flex;align-items:center;gap:12px}.unit-pill{border:1px solid var(--line);border-radius:999px;padding:8px 13px;font-size:12px;background:white;color:#365963}.demo{font-size:11px;font-weight:800;letter-spacing:.08em;color:#8a5a12;background:#fff4d8;border:1px solid #f0dfb5;padding:6px 9px;border-radius:999px}.wrap{max-width:1160px;margin:auto;padding:34px 20px 70px}.intro{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.1em;font-weight:800;color:var(--green)}h1{font-size:clamp(28px,4vw,39px);letter-spacing:-1px;line-height:1.12;margin:7px 0}.intro p,.muted{color:var(--muted)}.intro p{margin:8px 0 0;max-width:660px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:25px 0}.tab,button,select,input{font:inherit}.tab{border:1px solid var(--line);background:white;color:#47616a;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer}.tab.active{background:#e5f4f1;border-color:#9acdc3;color:#076c72}.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:20px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 5px 22px #173b4908}.card h2,.card h3{margin:0 0 5px}.card h2{font-size:21px}.card h3{font-size:16px}.sub{font-size:13px;color:var(--muted);margin:0 0 18px}.field{display:grid;gap:6px;margin:14px 0}.field label{font-size:13px;font-weight:750}.field select,.field input{width:100%;min-height:46px;border:1px solid #c8d8d8;border-radius:10px;padding:10px 12px;background:#fff;color:#173b49}.field select:focus,.field input:focus,button:focus-visible{outline:3px solid #f2c35d;outline-offset:2px}.row{display:flex;gap:12px}.row>*{flex:1}.choice{display:flex;gap:9px;flex-wrap:wrap}.choice button{flex:1;min-width:100px;border:1px solid var(--line);background:#fff;padding:13px 10px;border-radius:12px;text-align:left;cursor:pointer}.choice button strong{display:block;font-size:14px}.choice button span{font-size:11px;color:var(--muted)}.choice button.selected{border-color:#64b4a5;background:#edf8f5;box-shadow:inset 0 0 0 1px #64b4a5}.btn{border:0;background:var(--teal);color:white;border-radius:11px;padding:12px 17px;font-weight:800;cursor:pointer}.btn.secondary{background:white;border:1px solid var(--line);color:#31545e}.btn.full{width:100%;margin-top:12px}.summary{background:#f3f8f7;border:1px solid var(--line);border-radius:14px;padding:15px;margin-top:16px}.summary-line{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px}.summary-line span{color:var(--muted)}.notice{font-size:12px;color:#6b5a34;background:#fff8e7;border:1px solid #f0e2b9;border-radius:12px;padding:12px;margin-top:14px}.success{display:none;background:#eaf7ef;border:1px solid #b7dfc5;border-radius:14px;padding:15px;margin-top:14px}.success.show{display:block}.doctor-head{display:flex;justify-content:space-between;gap:15px;align-items:start}.doctor-head .avatar{width:48px;height:48px;border-radius:15px;background:#e5f4f1;display:grid;place-items:center;color:var(--teal);font-weight:900}.doctor-info{display:flex;gap:12px;align-items:center}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat{background:#f4f8f7;border:1px solid var(--line);padding:13px;border-radius:13px}.stat strong{display:block;font-size:23px}.stat span{font-size:11px;color:var(--muted)}.bar{height:9px;background:#e7eeee;border-radius:99px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;width:62%;background:#16845b;border-radius:99px}.schedule{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.schedule .field{margin:0}.queue{display:grid;gap:9px}.person{display:flex;align-items:center;gap:11px;border:1px solid var(--line);padding:12px;border-radius:12px}.number{width:30px;height:30px;border-radius:10px;background:#edf4f3;display:grid;place-items:center;font-weight:800;color:#45616a}.person-main{flex:1}.person-main b{display:block;font-size:13px}.person-main small{color:var(--muted);font-size:11px}.status{font-size:10px;font-weight:800;padding:5px 8px;border-radius:99px;background:#e8f5ed;color:#18744c}.status.wait{background:#fff4db;color:#94610c}.status.next{background:#eaf2fb;color:#3c6695}.panel{display:none}.panel.active{display:block}.footnote{text-align:center;font-size:11px;color:var(--muted);margin-top:25px}@media(max-width:780px){.grid{grid-template-columns:1fr}.intro{display:block}.top{align-items:flex-start}.top-right{flex-direction:column;align-items:flex-end}.unit-pill{max-width:190px;text-align:right}.schedule{grid-template-columns:1fr}}@media(max-width:420px){.stats{grid-template-columns:1fr 1fr}.card{padding:17px}.row{display:grid}.choice button{min-width:calc(50% - 8px)}}
+</style>
+</head>
+<body>
+<header class="top">
+ <div class="brand"><span class="mark">SP</span><span>Saúde <b>Perto</b><small>Portal do cidadão</small></span></div>
+ <div class="top-right"><span class="unit-pill" id="top-unit">📍 Unidade não selecionada</span><span class="demo">PRÉVIA DEMONSTRATIVA</span></div>
+</header>
+<main class="wrap">
+ <div class="intro"><div><span class="eyebrow">EXPERIÊNCIA INTEGRADA</span><h1>Saúde mais perto de você.</h1><p>Explore como o cidadão escolhe sua unidade e solicita atendimento, enquanto a equipe organiza a jornada do médico e a fila da unidade.</p></div></div>
+ <nav class="tabs" aria-label="Visões da demonstração">
+  <button class="tab active" data-tab="citizen">👤 Portal do cidadão</button>
+  <button class="tab" data-tab="doctor">🩺 Painel do médico</button>
+  <button class="tab" data-tab="reception">🏥 Recepção e fila</button>
+ </nav>
+ <section class="panel active" id="citizen">
+  <div class="grid">
+   <article class="card">
+    <h2>Solicitar atendimento</h2><p class="sub">Escolha sua unidade de referência e informe quando prefere ser atendido.</p>
+    <div class="field"><label for="neighborhood">1. Seu bairro</label><select id="neighborhood"><option value="">Selecione seu bairro</option><option>Centro</option><option>Vila Nova</option><option>São Geraldo</option><option>Planalto</option></select></div>
+    <div class="field"><label for="unit">2. Unidade de saúde</label><select id="unit"><option value="">Selecione primeiro o bairro</option></select></div>
+    <div class="field"><label for="specialty">3. Especialidade</label><select id="specialty"><option>Clínica geral</option><option>Pediatria</option><option>Ginecologia</option><option>Enfermagem</option></select></div>
+    <div class="field"><label for="doctor">4. Profissional</label><select id="doctor"><option>Dr. Rafael Mendes</option><option>Dra. Camila Rocha</option></select></div>
+    <div class="field"><label>5. Período de preferência</label><div class="choice" id="periods"><button type="button" class="selected" data-period="Manhã"><strong>☀️ Manhã</strong><span>Preferência de chegada</span></button><button type="button" data-period="Tarde"><strong>🌤️ Tarde</strong><span>Preferência de chegada</span></button><button type="button" data-period="Indiferente"><strong>🗓️ Indiferente</strong><span>Primeira opção disponível</span></button></div></div>
+    <div class="notice">A solicitação não representa horário exato de consulta. A unidade confirma a previsão conforme a agenda, a capacidade do dia e as prioridades de atendimento.</div>
+    <button class="btn full" id="request">Revisar solicitação</button>
+   </article>
+   <aside class="card">
+    <h2>Resumo da solicitação</h2><p class="sub">Confira as informações antes de enviar.</p>
+    <div class="summary" id="request-summary"><div class="summary-line"><span>Bairro</span><b id="sum-neighborhood">—</b></div><div class="summary-line"><span>Unidade</span><b id="sum-unit">—</b></div><div class="summary-line"><span>Especialidade</span><b id="sum-specialty">Clínica geral</b></div><div class="summary-line"><span>Profissional</span><b id="sum-doctor">Dr. Rafael Mendes</b></div><div class="summary-line"><span>Preferência</span><b id="sum-period">Manhã</b></div></div>
+    <div class="success" id="request-success"><b>Solicitação demonstrativa registrada!</b><p class="sub" style="margin:5px 0 0">Na versão real, a unidade receberia o pedido e confirmaria a previsão de atendimento. Nenhuma consulta real foi marcada nesta demonstração.</p></div>
+    <p class="muted" style="font-size:12px;margin-top:17px">A unidade escolhida aparece na barra superior para facilitar o acesso durante a navegação.</p>
+   </aside>
+  </div>
+ </section>
+ <section class="panel" id="doctor">
+  <div class="grid">
+   <article class="card">
+    <div class="doctor-head"><div class="doctor-info"><div class="avatar">RM</div><div><h2>Dr. Rafael Mendes</h2><p class="sub" style="margin:2px 0">Clínico geral · UBS Centro</p></div></div><span class="status">Jornada ativa</span></div>
+    <h3>Jornada de atendimento</h3><p class="sub">Exemplo de configuração semanal da unidade.</p>
+    <div class="schedule">
+     <div class="field"><label for="start">Início do expediente</label><input id="start" type="time" value="07:00"></div>
+     <div class="field"><label for="end">Fim do expediente</label><input id="end" type="time" value="17:00"></div>
+     <div class="field"><label for="break-start">Início do intervalo</label><input id="break-start" type="time" value="12:00"></div>
+     <div class="field"><label for="break-end">Fim do intervalo</label><input id="break-end" type="time" value="13:00"></div>
+    </div>
+    <button class="btn full" id="save-shift">Atualizar jornada demonstrativa</button>
+    <div class="success" id="shift-success"><b>Jornada atualizada nesta prévia.</b><p class="sub" style="margin:4px 0 0">Na versão real, a disponibilidade seria recalculada conforme as regras da unidade.</p></div>
+    <div class="summary"><div class="summary-line"><span>Tempo total no local</span><b id="duration">10 horas</b></div><div class="summary-line"><span>Intervalo</span><b id="break-duration">1 hora</b></div><div class="summary-line"><span>Tempo previsto de atendimento</span><b id="work-duration">9 horas</b></div></div>
+   </article>
+   <aside class="card">
+    <h2>Resumo da agenda</h2><p class="sub">Dados fictícios para visualização.</p>
+    <div class="stats"><div class="stat"><strong>12</strong><span>Solicitações do dia</span></div><div class="stat"><strong>08</strong><span>Atendidas</span></div><div class="stat"><strong>04</strong><span>Aguardando</span></div></div>
+    <h3>Organização do expediente</h3><p class="sub">O sistema bloqueia pedidos fora da jornada e do intervalo, e considera a capacidade definida pela unidade.</p>
+    <div class="summary"><div class="summary-line"><span>Início</span><b id="shift-start-label">07:00</b></div><div class="summary-line"><span>Intervalo</span><b id="shift-break-label">12:00–13:00</b></div><div class="summary-line"><span>Encerramento</span><b id="shift-end-label">17:00</b></div></div>
+   </aside>
+  </div>
+ </section>
+ <section class="panel" id="reception">
+  <div class="grid">
+   <article class="card">
+    <h2>Fila da unidade</h2><p class="sub">Exemplo de fila única com origem identificada e critérios de prioridade.</p>
+    <div class="stats"><div class="stat"><strong>09</strong><span>Na fila</span></div><div class="stat"><strong>02</strong><span>Em atendimento</span></div><div class="stat"><strong>01</strong><span>Prioridade clínica</span></div></div>
+    <div class="queue">
+     <div class="person"><span class="number">1</span><div class="person-main"><b>Maria S. (fictício)</b><small>Agendado pelo portal · chegada 06:52</small></div><span class="status">Em atendimento</span></div>
+     <div class="person"><span class="number">2</span><div class="person-main"><b>João P. (fictício)</b><small>Presencial · chegada 07:35</small></div><span class="status wait">Aguardando</span></div>
+     <div class="person"><span class="number">3</span><div class="person-main"><b>Ana C. (fictício)</b><small>Agendado pelo portal · chegada 07:48</small></div><span class="status next">Aguardando</span></div>
+     <div class="person"><span class="number">4</span><div class="person-main"><b>Pedro R. (fictício)</b><small>Prioridade clínica · chegada 07:51</small></div><span class="status wait">Prioridade</span></div>
+    </div>
+   </article>
+   <aside class="card">
+    <h2>Regras de organização</h2><p class="sub">O horário de agendamento não deve ser uma promessa de chamada exata.</p>
+    <div class="summary">
+     <div class="summary-line"><span>Agendados</span><b>Entram na fila após chegada e check-in</b></div>
+     <div class="summary-line"><span>Presenciais</span><b>Registrados pela recepção</b></div>
+     <div class="summary-line"><span>Prioridade</span><b>Conforme avaliação e protocolo da unidade</b></div>
+     <div class="summary-line"><span>Chamada</span><b>Gerenciada pela equipe em tempo real</b></div>
+    </div>
+    <div class="notice">A ordem final precisa seguir os protocolos clínicos e as regras municipais. A demonstração não substitui triagem nem define prioridade clínica automaticamente.</div>
+   </aside>
+  </div>
+ </section>
+ <p class="footnote">Prévia visual interativa · Dados e profissionais fictícios · Não realiza agendamentos nem altera prontuários ou filas reais.</p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab))}));
+const units={"Centro":["UBS Centro","UBS Vila das Flores"],"Vila Nova":["UBS Vila Nova"],"São Geraldo":["UBS São Geraldo"],"Planalto":["UBS Planalto"]};
+$("#neighborhood").addEventListener("change",()=>{const list=units[$("#neighborhood").value]||[];$("#unit").innerHTML='<option value="">Selecione uma unidade</option>'+list.map(x=>'<option>'+x+'</option>').join("");updateSummary()});
+["#unit","#specialty","#doctor"].forEach(s=>$(s).addEventListener("change",updateSummary));
+let period="Manhã";document.querySelectorAll("[data-period]").forEach(b=>b.addEventListener("click",()=>{period=b.dataset.period;document.querySelectorAll("[data-period]").forEach(x=>x.classList.toggle("selected",x===b));updateSummary()}));
+function updateSummary(){$("#sum-neighborhood").textContent=$("#neighborhood").value||"—";$("#sum-unit").textContent=$("#unit").value||"—";$("#sum-specialty").textContent=$("#specialty").value;$("#sum-doctor").textContent=$("#doctor").value;$("#sum-period").textContent=period;$("#top-unit").textContent=$("#unit").value?"📍 "+$("#unit").value:"📍 Unidade não selecionada"}
+$("#request").addEventListener("click",()=>{if(!$("#neighborhood").value||!$("#unit").value){alert("Selecione seu bairro e sua unidade para continuar.");return}$("#request-success").classList.add("show")});
+function mins(s){const [h,m]=s.split(":").map(Number);return h*60+m}function fmt(n){return Math.floor(n/60)+"h"+(n%60?String(n%60).padStart(2,"0"):"")}function updateShift(){const a=mins($("#start").value),b=mins($("#end").value),c=mins($("#break-start").value),d=mins($("#break-end").value);if(b<=a||d<c||c<a||d>b){$("#duration").textContent="Verificar horários";$("#break-duration").textContent="—";$("#work-duration").textContent="—";return}$("#duration").textContent=fmt(b-a);$("#break-duration").textContent=fmt(d-c);$("#work-duration").textContent=fmt((b-a)-(d-c));$("#shift-start-label").textContent=$("#start").value;$("#shift-break-label").textContent=$("#break-start").value+"–"+$("#break-end").value;$("#shift-end-label").textContent=$("#end").value}
+["#start","#end","#break-start","#break-end"].forEach(s=>$(s).addEventListener("change",updateShift));$("#save-shift").addEventListener("click",()=>{updateShift();$("#shift-success").classList.add("show")});updateShift();updateSummary();
+</script>
+</body>
+</html>
