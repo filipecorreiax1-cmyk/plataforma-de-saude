@@ -51,6 +51,20 @@ function toast(message) {
 function openDialog(selector) { $(selector).showModal(); }
 function closeDialog(selector) { $(selector).close(); }
 
+function beginButtonLoading(button, label) {
+  if (!button) return () => {};
+  const originalHTML = button.innerHTML;
+  const wasDisabled = button.disabled;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.innerHTML = '<span class="button-spinner" aria-hidden="true"></span><span>' + label + '</span>';
+  return () => {
+    button.innerHTML = originalHTML;
+    button.disabled = wasDisabled;
+    button.removeAttribute("aria-busy");
+  };
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -101,6 +115,10 @@ async function startSchedule() {
 $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   $("#auth-error").textContent = "";
+  const restoreButton = beginButtonLoading(
+    event.submitter || $("#auth-form").querySelector('[type="submit"]'),
+    "Entrando..."
+  );
   try {
     const session = await api("/api/auth/login", {
       method: "POST",
@@ -131,12 +149,18 @@ $("#auth-form").addEventListener("submit", async (event) => {
       $("#auth-otp").required = true;
       $("#auth-otp").focus();
     }
+  } finally {
+    restoreButton();
   }
 });
 
 $("#register-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   $("#register-error").textContent = "";
+  const restoreButton = beginButtonLoading(
+    event.submitter || $("#register-form").querySelector('[type="submit"]'),
+    "Criando conta..."
+  );
   try {
     const result = await api("/api/auth/register", {
       method: "POST",
@@ -155,6 +179,8 @@ $("#register-form").addEventListener("submit", async (event) => {
     openDialog("#auth-dialog");
   } catch (error) {
     $("#register-error").textContent = error.message;
+  } finally {
+    restoreButton();
   }
 });
 
@@ -202,6 +228,10 @@ async function loadSlots() {
 $("#schedule-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   $("#schedule-error").textContent = "";
+  const restoreButton = beginButtonLoading(
+    event.submitter || $("#schedule-form").querySelector('[type="submit"]'),
+    "Agendando..."
+  );
   try {
     await api("/api/appointments", {
       method: "POST",
@@ -211,6 +241,8 @@ $("#schedule-form").addEventListener("submit", async (event) => {
     toast("Agendamento registrado.");
   } catch (error) {
     $("#schedule-error").textContent = error.message;
+  } finally {
+    restoreButton();
   }
 });
 
