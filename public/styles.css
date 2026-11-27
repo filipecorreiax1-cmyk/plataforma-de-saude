@@ -723,3 +723,34 @@ input:focus, select:focus, .staff-form textarea:focus {
   outline: 3px solid #f2bd55;
   outline-offset: 1px;
 }
+
+/* Navegação lateral exclusiva do painel administrativo */
+.admin-shell{display:grid;grid-template-columns:250px minmax(0,1fr);grid-template-rows:auto auto;gap:18px 26px;align-items:start}
+.admin-shell>.admin-page-title{grid-column:1/-1;margin:0 0 2px}
+.admin-sidebar{position:sticky;top:18px;grid-column:1;grid-row:2;min-width:0;padding:18px 13px;background:#fff;border:1px solid #e1ecea;border-radius:18px;box-shadow:0 8px 24px rgba(24,59,78,.05)}
+.admin-sidebar-heading{display:flex;align-items:center;gap:10px;padding:5px 8px 18px;border-bottom:1px solid #edf2f1}
+.admin-sidebar-heading .brand-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#e5f4f2;color:#087f8c;font-weight:800}
+.admin-sidebar-heading b,.admin-sidebar-heading small{display:block}
+.admin-sidebar-heading small{margin-top:3px;color:var(--muted);font-size:11px}
+.admin-sidebar-nav{display:grid;gap:5px;padding:14px 0}
+.admin-sidebar-nav a{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:#48616b;text-decoration:none;font-size:13px;font-weight:700;transition:background .18s,color .18s}
+.admin-sidebar-nav a span{width:19px;text-align:center;color:#087f8c;font-size:17px}
+.admin-sidebar-nav a:hover,.admin-sidebar-nav a.active{background:#eaf6f4;color:#076e78}
+.admin-sidebar-footer{padding:13px 8px 3px;border-top:1px solid #edf2f1;color:var(--muted);font-size:11px;line-height:1.5}
+.admin-content{grid-column:2;grid-row:2;min-width:0;display:grid;gap:17px}
+.admin-content>.staff-form,.admin-content>form.staff-form,.admin-content>section.staff-form{margin:0}
+.admin-menu-toggle{display:none}
+.admin-content [id]{scroll-margin-top:18px}
+@media(max-width:900px){
+ .admin-shell{grid-template-columns:1fr;gap:12px}
+ .admin-shell>.admin-page-title{grid-column:1}
+ .admin-menu-toggle{display:inline-flex;grid-column:1;justify-self:start;min-height:42px;padding:8px 13px}
+ .admin-sidebar{display:none;position:static;grid-column:1;grid-row:auto;padding:12px}
+ .admin-sidebar.open{display:block}
+ .admin-sidebar-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-content{grid-column:1;grid-row:auto}
+}
+@media(max-width:480px){
+ .admin-sidebar-nav{grid-template-columns:1fr}
+ .admin-sidebar-nav a{padding:12px}
+}
