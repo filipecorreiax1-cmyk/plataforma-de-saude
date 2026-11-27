@@ -492,3 +492,46 @@ input:focus, select:focus, .staff-form textarea:focus {
 .dashboard-empty.compact{padding:12px}.appointment-summary>.button{margin-top:12px}
 .history-panel{grid-column:1/-1}.history-panel #dashboard-history{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
 @media(max-width:760px){.citizen-dashboard{padding:34px 18px 40px}.dashboard-heading{align-items:flex-start;flex-direction:column}.dashboard-heading>.button{width:100%}.dashboard-grid{grid-template-columns:1fr}.history-panel{grid-column:auto}.history-panel #dashboard-history{grid-template-columns:1fr}.dashboard-panel{padding:19px}}
+
+
+/* Organização de acesso e navegação — Saúde Perto */
+.top-actions #register-open-top { box-shadow: 0 5px 14px rgba(8,127,140,.14); }
+.top-actions #register-open-top[hidden] { display:none!important; }
+#mobile-register[hidden] { display:none!important; }
+.hero-register-link {
+  display:inline-flex; align-items:center; flex-wrap:wrap; gap:5px;
+  margin:17px 0 0; padding:5px 0; border:0; background:transparent;
+  color:#557078; font:inherit; font-size:13px; text-align:left; cursor:pointer;
+}
+.hero-register-link b { color:var(--teal); }
+.hero-register-link svg { width:15px; height:15px; color:var(--teal); margin-left:2px; }
+.hero-register-link:hover b { text-decoration:underline; }
+.desktop-nav a[hidden], .mobile-menu-links a[hidden] { display:none!important; }
+.dialog-switch { margin:18px 0 0; color:var(--muted); }
+.dialog-switch .inline-link { padding:2px 3px; text-decoration:underline; text-underline-offset:3px; }
+#register-dialog form { padding-top:34px; }
+#register-dialog .privacy-check { margin-top:18px; padding:12px; border-radius:10px; background:#f3f9f8; }
+@media(max-width:760px) {
+  .top-actions #register-open-top { min-height:42px; padding:8px 12px; font-size:12px; }
+  .hero-register-link { font-size:12px; }
+}
+@media(max-width:380px) {
+  .topbar .brand { font-size:16px; gap:7px; }
+  .topbar .brand-mark { width:36px; height:36px; }
+  .top-actions #login-open { min-height:42px; padding:8px 11px; font-size:12px; }
+  .top-actions #register-open-top { padding:8px 10px; }
+}
+
+
+/* Área pessoal separada da página inicial */
+.account-page{min-height:65vh;padding:54px max(5vw,20px) 68px;background:linear-gradient(180deg,#f2f9f7 0%,#fff 48%)}
+.account-welcome,.account-grid{max-width:1120px;margin:0 auto}
+.account-welcome{margin-bottom:28px}.account-welcome h1{margin:10px 0;font-size:clamp(30px,4vw,42px);color:var(--ink)}
+.account-welcome h1 span{color:var(--teal)}.account-welcome p{color:var(--muted);margin:0}
+.account-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;align-items:start}
+.account-history{grid-column:1/-1;scroll-margin-top:90px}
+.account-history #account-history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+.account-history .dashboard-panel-title{justify-content:space-between}
+.account-history .dashboard-panel-title>div{margin-right:auto}
+.account-upcoming>.button{margin-top:12px}
+@media(max-width:760px){.account-page{padding:36px 18px 48px}.account-grid{grid-template-columns:1fr}.account-history{grid-column:auto}.account-history #account-history-list{grid-template-columns:1fr}.account-history .dashboard-panel-title{flex-wrap:wrap}}
