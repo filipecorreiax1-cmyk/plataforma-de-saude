@@ -154,7 +154,7 @@
             <p class="muted">Entre para gerenciar seus agendamentos.</p><label for="auth-email">E-mail</label><input
                 id="auth-email" type="email" autocomplete="email" required><label
                 for="auth-password">Senha</label><input id="auth-password" type="password"
-                autocomplete="current-password" required minlength="10">
+                autocomplete="current-password" required minlength="10"><button class="password-toggle" type="button" data-password-toggle="auth-password" aria-label="Mostrar senha" aria-pressed="false"><i data-lucide="eye"></i></button>
             <div id="otp-wrap" hidden><label for="auth-otp">Código do aplicativo autenticador (6 dígitos)</label><input
                     id="auth-otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000"></div>
             <p id="auth-error" class="form-error" role="alert"></p><button class="button button-primary full"
@@ -172,7 +172,7 @@
                 com DDD</label><input id="reg-phone" type="tel" required autocomplete="tel"><label for="reg-sus">Cartão
                 SUS (opcional)</label><input id="reg-sus" inputmode="numeric"><label for="reg-password">Senha (mínimo 10
                 caracteres)</label><input id="reg-password" type="password" required minlength="10"
-                autocomplete="new-password"><label class="privacy-check"><input id="privacy-accepted" type="checkbox"
+                autocomplete="new-password"><button class="password-toggle" type="button" data-password-toggle="reg-password" aria-label="Mostrar senha" aria-pressed="false"><i data-lucide="eye"></i></button><label class="privacy-check"><input id="privacy-accepted" type="checkbox"
                     required> Li o <a href="/privacidade.html" target="_blank" rel="noopener">Aviso de
                     Privacidade</a>.</label>
             <p id="register-error" class="form-error" role="alert"></p><button class="button button-primary full"
