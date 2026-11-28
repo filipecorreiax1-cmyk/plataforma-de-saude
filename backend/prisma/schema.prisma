@@ -104,6 +104,7 @@ model AuditEvent {
   actor     User?    @relation(fields: [actorId], references: [id])
   @@index([actorId, createdAt])
 }
+
 model ScheduleSlot {
   id        String       @id @default(uuid())
   doctorId  String
@@ -121,7 +122,6 @@ model ScheduleSlot {
   @@index([healthUnitId, startsAt, isOpen])
 }
 
-
 model HealthUnit {
   id           String   @id @default(uuid())
   name         String
@@ -129,6 +129,8 @@ model HealthUnit {
   phone        String?
   municipality String
   coverageArea String?
+  latitude     Float?
+  longitude    Float?
   active       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -149,7 +151,6 @@ model HealthUnitDoctor {
   @@unique([healthUnitId, doctorId])
   @@index([doctorId])
 }
-
 
 model DoctorPeriodSchedule {
   id          String   @id @default(uuid())
