@@ -41,6 +41,7 @@ model User {
   availableSlots  ScheduleSlot[]
   healthUnitAssignments HealthUnitDoctor[]
   doctorPeriodSchedules DoctorPeriodSchedule[]
+  recurringPeriodSchedules DoctorRecurringPeriod[]
   doctorSpecialties DoctorSpecialty[]
 }
 
@@ -138,6 +139,7 @@ model HealthUnit {
   doctors      HealthUnitDoctor[]
   scheduleSlots ScheduleSlot[]
   periodSchedules DoctorPeriodSchedule[]
+  recurringPeriodSchedules DoctorRecurringPeriod[]
   @@unique([name, municipality])
   @@index([municipality, active])
 }
