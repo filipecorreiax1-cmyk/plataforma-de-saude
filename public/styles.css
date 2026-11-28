@@ -849,3 +849,7 @@ input:focus, select:focus, .staff-form textarea:focus {
 .unit-doctor-name{font-weight:600;font-size:14px}.button-small{min-height:36px;padding:7px 11px;font-size:12px;margin:0!important}
 .unit-admin-actions{padding-top:4px;border-top:1px solid #edf1f1}
 @media(max-width:650px){.unit-doctor-row{align-items:flex-start;flex-direction:column}.unit-doctor-row .button{width:100%}.unit-admin-heading{align-items:flex-start}.staff-person-actions .button{width:100%}}
+
+
+/* Localização simplificada das unidades: busca por endereço e mapa clicável */
+.unit-location-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:18px 0 10px;padding:15px;border:1px solid #dce9e7;border-radius:13px;background:#f7fbfa}.unit-location-tools b{color:#21454d}.unit-location-tools p{margin:4px 0 0;font-size:12px}.unit-location-map{width:100%;height:320px;border:1px solid #d9e5e3;border-radius:13px;overflow:hidden;background:#edf3f2;z-index:0}.unit-location-map .leaflet-control-attribution{font-size:9px}.unit-coordinates-details{margin:12px 0;padding:12px 14px;border:1px solid #e3ebea;border-radius:10px;background:#fbfdfd}.unit-coordinates-details summary{cursor:pointer;color:#526b72;font-size:12px;font-weight:700}.unit-coordinates-details .form-grid{margin-top:12px}.unit-coordinates-details #unit-capture-location{margin-top:10px}@media(max-width:600px){.unit-location-tools{align-items:stretch}.unit-location-tools .button{width:100%}.unit-location-map{height:280px}}
