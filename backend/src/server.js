@@ -68,7 +68,7 @@ async function materializeRecurringPeriods(unitId, horizonDays=30){
    const startsAt=new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),sh,sm));
    const endsAt=new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),eh,em));
    if(startsAt<=new Date())continue;
-   await prisma.doctorPeriodSchedule.createMany({data:[{doctorId:rule.doctorId,healthUnitId:rule.healthUnitId,date:new Date(day),period:rule.period,startsAt,endsAt,specialty:rule.specialty,capacity:rule.capacity,active:true}],skipDuplicates:true});
+   await prisma.doctorPeriodSchedule.createMany({data:[{doctorId:rule.doctorId,healthUnitId:rule.healthUnitId,date:new Date(day),period:rule.period,startsAt,endsAt,specialty:rule.specialty,capacity:rule.capacity,active:true,recurringPeriodId:rule.id}],skipDuplicates:true});
   }
  }
 }
@@ -90,7 +90,7 @@ app.get("/api/admin/recurring-periods",auth(),roles("ADMIN"),async(req,res)=>{
  res.json({schedules});
 });
 app.patch("/api/admin/recurring-periods/:id",auth(),roles("ADMIN"),async(req,res)=>{
- try{const {active}=z.object({active:z.boolean()}).parse(req.body);const rule=await prisma.doctorRecurringPeriod.update({where:{id:req.params.id},data:{active}});await log(req.user.id,active?"RECURRING_PERIOD_ACTIVATED":"RECURRING_PERIOD_DEACTIVATED","DoctorRecurringPeriod",rule.id);res.json({schedule:rule,message:active?"Repetição reativada.":"Repetição desativada. Os períodos já publicados e agendamentos existentes foram preservados."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar a repetição."})}
+ try{const {active}=z.object({active:z.boolean()}).parse(req.body);const rule=await prisma.doctorRecurringPeriod.update({where:{id:req.params.id},data:{active}});const today=new Date();today.setUTCHours(0,0,0,0);await prisma.doctorPeriodSchedule.updateMany({where:{recurringPeriodId:rule.id,date:{gte:today}},data:{active}});await log(req.user.id,active?"RECURRING_PERIOD_ACTIVATED":"RECURRING_PERIOD_DEACTIVATED","DoctorRecurringPeriod",rule.id);res.json({schedule:rule,message:active?"Repetição reativada.":"Repetição desativada. Os períodos já publicados e agendamentos existentes foram preservados."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar a repetição."})}
 });
 app.get("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
  const schedules=await prisma.doctorPeriodSchedule.findMany({include:{doctor:{select:{id:true,name:true}},healthUnit:{select:{id:true,name:true}},_count:{select:{appointments:true}}},orderBy:[{date:"desc"},{startsAt:"asc"}],take:150});
