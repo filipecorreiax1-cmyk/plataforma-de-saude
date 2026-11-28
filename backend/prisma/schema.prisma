@@ -171,6 +171,8 @@ model DoctorPeriodSchedule {
   doctor      User       @relation(fields: [doctorId], references: [id])
   healthUnit  HealthUnit @relation(fields: [healthUnitId], references: [id])
   appointments Appointment[]
+  recurringPeriodId String?
+  recurringPeriod DoctorRecurringPeriod? @relation(fields: [recurringPeriodId], references: [id], onDelete: SetNull)
   @@unique([doctorId, healthUnitId, date, period])
   @@index([healthUnitId, date, period, active])
   @@index([doctorId, date, active])
@@ -206,6 +208,7 @@ model DoctorRecurringPeriod {
   updatedAt   DateTime @updatedAt
   doctor      User       @relation(fields: [doctorId], references: [id])
   healthUnit  HealthUnit @relation(fields: [healthUnitId], references: [id])
+  generatedSchedules DoctorPeriodSchedule[]
   @@index([healthUnitId, active, validFrom])
   @@index([doctorId, active])
 }
