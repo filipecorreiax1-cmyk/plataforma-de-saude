@@ -17,7 +17,7 @@ function finishOperation(error){
  showOperationStatus(error?"Não foi possível concluir. Confira a mensagem na tela.":"Concluído com sucesso.",error?"error":"success");
  operationHideTimer=setTimeout(()=>{if(operationCount===0){const node=document.querySelector("#operation-status");node?.classList.remove("is-visible")}},1800);
 }
-const api=async(u,o={})=>{const method=(o.method||"GET").toUpperCase(),mutating=["POST","PATCH","PUT","DELETE"].includes(method);if(mutating)startOperation(method);try{const r=await fetch(u,{...o,credentials:"same-origin",headers:{"Content-Type":"application/json",...(o.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Não foi possível concluir.");if(mutating)finishOperation(false);return d}catch(error){if(mutating)finishOperation(true);throw error}};
+const api=async(u,o={})=>{const method=(o.method||"GET").toUpperCase(),mutating=["POST","PATCH","PUT","DELETE"].includes(method),trackOperation=mutating&&!String(u).startsWith("/api/auth/");if(trackOperation)startOperation(method);try{const r=await fetch(u,{...o,credentials:"same-origin",headers:{"Content-Type":"application/json",...(o.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Não foi possível concluir.");if(trackOperation)finishOperation(false);return d}catch(error){if(trackOperation)finishOperation(true);throw error}};
 const toast=m=>{const t=$("#staff-toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3500)};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
