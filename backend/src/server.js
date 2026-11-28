@@ -100,9 +100,12 @@ app.patch("/api/admin/recurring-periods/:id",auth(),roles("ADMIN"),async(req,res
  try{const {active}=z.object({active:z.boolean()}).parse(req.body);const rule=await prisma.doctorRecurringPeriod.update({where:{id:req.params.id},data:{active}});const today=new Date();today.setUTCHours(0,0,0,0);await prisma.doctorPeriodSchedule.updateMany({where:{recurringPeriodId:rule.id,date:{gte:today}},data:{active}});await log(req.user.id,active?"RECURRING_PERIOD_ACTIVATED":"RECURRING_PERIOD_DEACTIVATED","DoctorRecurringPeriod",rule.id);res.json({schedule:rule,message:active?"Repetição reativada.":"Repetição desativada. Os períodos já publicados e agendamentos existentes foram preservados."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar a repetição."})}
 });
 app.get("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
- const schedules=await prisma.doctorPeriodSchedule.findMany({include:{doctor:{select:{id:true,name:true}},healthUnit:{select:{id:true,name:true}},_count:{select:{appointments:true}}},orderBy:[{date:"desc"},{startsAt:"asc"}],take:150});
+ const localToday=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ const today=new Date(localToday+"T00:00:00.000Z");
+ const tomorrow=new Date(today);tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+ const schedules=await prisma.doctorPeriodSchedule.findMany({where:{date:{gte:today,lte:tomorrow}},include:{doctor:{select:{id:true,name:true}},healthUnit:{select:{id:true,name:true}},_count:{select:{appointments:true}}},orderBy:[{date:"asc"},{startsAt:"asc"}]});
  const rows=await Promise.all(schedules.map(async x=>({...x,booked:await prisma.appointment.count({where:{periodScheduleId:x.id,status:"SCHEDULED"}})})));
- res.json({schedules:rows});
+ res.json({schedules:rows,visibleDates:[localToday,tomorrow.toISOString().slice(0,10)]});
 });
 app.patch("/api/admin/period-schedules/:id",auth(),roles("ADMIN"),async(req,res)=>{
  try{const {active}=z.object({active:z.boolean()}).parse(req.body);const item=await prisma.doctorPeriodSchedule.update({where:{id:req.params.id},data:{active}});await log(req.user.id,active?"DOCTOR_PERIOD_ACTIVATED":"DOCTOR_PERIOD_DEACTIVATED","DoctorPeriodSchedule",item.id);res.json({schedule:item,message:active?"Período reativado.":"Período desativado para novas reservas."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar o período."})}
@@ -120,7 +123,7 @@ app.post("/api/admin/recurring-periods",auth(),roles("ADMIN"),async(req,res)=>{
   const rule=await prisma.doctorRecurringPeriod.create({data:{...d,weekdays:[...new Set(d.weekdays)],validFrom:from,validUntil:to}});
   await materializeRecurringPeriods(unit.id);
   await log(req.user.id,"DOCTOR_RECURRING_PERIOD_CREATED","DoctorRecurringPeriod",rule.id);
-  res.status(201).json({schedule:rule,message:"Repetição semanal cadastrada. Os próximos 30 dias serão disponibilizados automaticamente conforme os dias selecionados."});
+  res.status(201).json({schedule:rule,message:"Repetição semanal cadastrada. Os períodos de hoje e amanhã serão preparados automaticamente conforme os dias selecionados."});
  }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível cadastrar a repetição semanal."})}
 });
 app.post("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
