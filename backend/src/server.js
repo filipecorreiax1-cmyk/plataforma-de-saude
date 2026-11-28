@@ -6,7 +6,7 @@ if (!SECRET || SECRET.length < 32) {
 }
 app.disable("x-powered-by");app.set("trust proxy",1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==="production"&&req.get("x-forwarded-proto")!=="https")return res.redirect(308,"https://"+req.get("host")+req.originalUrl);next()});
-app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"20kb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));
+app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"6mb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));
 const loginLimiter=rateLimit({windowMs:900000,limit:8,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de login. Aguarde 15 minutos."}});
 const registerLimiter=rateLimit({windowMs:3600000,limit:5,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de cadastro. Tente novamente mais tarde."}});app.use(express.static(path.join(__dirname,"../../public")));
 app.get("/", (req, res) => {
@@ -51,6 +51,49 @@ app.get("/api/staff/slots",async(req,res)=>{
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
  const slots=await prisma.scheduleSlot.findMany({where:{doctorId,isOpen:true,startsAt:{gt:new Date()},healthUnitId:{not:null},healthUnit:{is:{active:true,doctors:{some:{doctorId}}}},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}},orderBy:{startsAt:"asc"},take:100,select:{id:true,startsAt:true,specialty:true,unit:true,healthUnitId:true}});
  res.json({slots});
+});
+
+const periodSchema=z.enum(["MORNING","AFTERNOON","EVENING"]);
+const imageSchema=z.string().max(5_000_000).optional().nullable().refine(v=>!v||/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),"Envie uma imagem PNG, JPG ou WebP válida.");
+app.get("/api/period-schedules",async(req,res)=>{
+ try{
+  const unitId=String(req.query.unitId||"");
+  const specialty=String(req.query.specialty||"");
+  const date=String(req.query.date||"");
+  if(!unitId)return res.status(400).json({error:"Selecione a unidade."});
+  const where={healthUnitId:unitId,active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}},...(specialty?{specialty}:{})};
+  if(date)where.date=new Date(date+"T00:00:00.000Z");
+  const schedules=await prisma.doctorPeriodSchedule.findMany({where,include:{doctor:{select:{id:true,name:true}},appointments:{where:{status:"SCHEDULED"},select:{id:true}}},orderBy:[{date:"asc"},{startsAt:"asc"},{doctor:{name:"asc"}}]});
+  res.json({schedules:schedules.filter(x=>x.appointments.length<x.capacity).map(x=>({id:x.id,date:x.date,period:x.period,startsAt:x.startsAt,endsAt:x.endsAt,specialty:x.specialty,unitId:x.healthUnitId,unit:x.healthUnitId,doctor:x.doctor,capacity:x.capacity,remaining:x.capacity-x.appointments.length}))});
+ }catch(e){res.status(500).json({error:"Não foi possível carregar os períodos disponíveis."})}
+});
+app.post("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),date:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),period:periodSchema,startsAt:z.string().datetime(),endsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
+  const start=new Date(d.startsAt),end=new Date(d.endsAt),day=new Date(d.date+"T00:00:00.000Z");
+  if(start<=new Date()||end<=start||start.toISOString().slice(0,10)!==d.date||end.toISOString().slice(0,10)!==d.date)return res.status(400).json({error:"Confira a data e o intervalo do período."});
+  const [doctor,unit,assignment]=await Promise.all([prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}})]);
+  if(!doctor||!unit||!assignment)return res.status(409).json({error:"Confira se o médico está ativo, com 2FA e vinculado à unidade ativa."});
+  const schedule=await prisma.doctorPeriodSchedule.upsert({where:{doctorId_healthUnitId_date_period:{doctorId:d.doctorId,healthUnitId:d.healthUnitId,date:day,period:d.period}},create:{...d,date:day,startsAt:start,endsAt:end},update:{startsAt:start,endsAt:end,specialty:d.specialty,capacity:d.capacity,active:true}});
+  await log(req.user.id,"DOCTOR_PERIOD_SCHEDULE_SAVED","DoctorPeriodSchedule",schedule.id);
+  res.status(201).json({schedule,message:"Período de atendimento publicado."});
+ }catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Já existe um período para este médico, unidade e dia.":e.errors?.[0]?.message||"Não foi possível publicar o período."})}
+});
+app.patch("/api/appointments/:id/period",auth(),roles("PATIENT"),async(req,res)=>{
+ try{
+  const {periodScheduleId}=z.object({periodScheduleId:z.string().uuid()}).parse(req.body);
+  const updated=await prisma.$transaction(async tx=>{
+   const appointment=await tx.appointment.findUnique({where:{id:req.params.id}});
+   if(!appointment||appointment.patientId!==req.user.id)throw Object.assign(new Error("Agendamento não encontrado."),{status:404});
+   if(appointment.status!=="SCHEDULED")throw Object.assign(new Error("Este agendamento não está ativo."),{status:409});
+   const target=await tx.doctorPeriodSchedule.findUnique({where:{id:periodScheduleId},include:{appointments:{where:{status:"SCHEDULED"},select:{id:true}}}});
+   if(!target||!target.active||target.appointments.length>=target.capacity||target.date<new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z"))throw Object.assign(new Error("Este período não possui mais disponibilidade."),{status:409});
+   if(target.doctorId!==appointment.doctorId||target.healthUnitId!== (await tx.doctorPeriodSchedule.findUnique({where:{id:appointment.periodScheduleId}}))?.healthUnitId)throw Object.assign(new Error("A troca deve ser para outro período do mesmo médico e unidade."),{status:400});
+   return tx.appointment.update({where:{id:appointment.id},data:{periodScheduleId:target.id,startsAt:target.startsAt,specialty:target.specialty,unit:(await tx.healthUnit.findUnique({where:{id:target.healthUnitId}})).name}});
+  });
+  await log(req.user.id,"APPOINTMENT_PERIOD_CHANGED","Appointment",updated.id);
+  res.json({appointment:updated,message:"Período alterado com sucesso."});
+ }catch(e){res.status(e.status||400).json({error:e.message||"Não foi possível alterar o período."})}
 });
 app.post("/api/admin/slots",auth(),roles("ADMIN"),async(req,res)=>{
  try{
@@ -144,9 +187,16 @@ app.post("/api/admin/staff",auth(),roles("ADMIN"),async(req,res)=>{
 app.get("/api/appointments",auth(),roles("PATIENT","DOCTOR","ADMIN"),async(req,res)=>{const where=req.user.role==="PATIENT"?{patientId:req.user.id}:req.user.role==="DOCTOR"?{doctorId:req.user.id}:{};const rows=await prisma.appointment.findMany({where,include:{patient:{select:{id:true,name:true,cpf:true,susCard:true,phone:true}},doctor:{select:{name:true}}},orderBy:{startsAt:"asc"}});res.json({appointments:rows.map(a=>({id:a.id,startsAt:a.startsAt,specialty:a.specialty,unit:a.unit,status:a.status,doctor:a.doctor.name,patient:req.user.role==="PATIENT"?undefined:{id:a.patient.id,name:a.patient.name,cpf:cpfMask(a.patient.cpf),susCard:susMask(a.patient.susCard),phone:a.patient.phone}}))})});
 app.post("/api/appointments",auth(),roles("PATIENT"),async(req,res)=>{
  try{
-  const {slotId}=z.object({slotId:z.string().uuid()}).parse(req.body);
+  const d=z.object({periodScheduleId:z.string().uuid().optional(),slotId:z.string().uuid().optional()}).refine(v=>Boolean(v.periodScheduleId||v.slotId),"Selecione um período.");
+  const input=d.parse(req.body);
   const a=await prisma.$transaction(async tx=>{
-   const slot=await tx.scheduleSlot.findFirst({where:{id:slotId,isOpen:true,startsAt:{gt:new Date()}}});
+   if(input.periodScheduleId){
+    const schedule=await tx.doctorPeriodSchedule.findUnique({where:{id:input.periodScheduleId},include:{appointments:{where:{status:"SCHEDULED"},select:{id:true}}}});
+    if(!schedule||!schedule.active||schedule.startsAt<=new Date()||schedule.appointments.length>=schedule.capacity)throw Object.assign(new Error("Este período não está mais disponível."),{status:409});
+    const unit=await tx.healthUnit.findUnique({where:{id:schedule.healthUnitId}});
+    return tx.appointment.create({data:{patientId:req.user.id,doctorId:schedule.doctorId,startsAt:schedule.startsAt,specialty:schedule.specialty,unit:unit.name,periodScheduleId:schedule.id}});
+   }
+   const slot=await tx.scheduleSlot.findFirst({where:{id:input.slotId,isOpen:true,startsAt:{gt:new Date()}}});
    if(!slot)throw Object.assign(new Error("Este horário não está mais disponível."),{status:409});
    const claimed=await tx.scheduleSlot.updateMany({where:{id:slot.id,isOpen:true},data:{isOpen:false}});
    if(claimed.count!==1)throw Object.assign(new Error("Este horário acabou de ser reservado."),{status:409});
@@ -154,21 +204,23 @@ app.post("/api/appointments",auth(),roles("PATIENT"),async(req,res)=>{
   });
   await log(req.user.id,"APPOINTMENT_CREATED","Appointment",a.id);
   res.status(201).json({appointment:a});
- }catch(e){res.status(e.status|| (e.code==="P2002"?409:400)).json({error:e.message||"Não foi possível agendar."})}
+ }catch(e){res.status(e.status||(e.code==="P2002"?409:400)).json({error:e.message||"Não foi possível agendar."})}
 });
 app.patch("/api/appointments/:id/cancel",auth(),roles("PATIENT","ADMIN"),async(req,res)=>{const a=await prisma.appointment.findUnique({where:{id:req.params.id}});if(!a)return res.status(404).json({error:"Agendamento não encontrado."});if(req.user.role==="PATIENT"&&a.patientId!==req.user.id)return res.status(403).json({error:"Você não pode alterar este agendamento."});if(!["PATIENT","ADMIN"].includes(req.user.role))return res.status(403).json({error:"Ação não permitida."});if(a.status!=="SCHEDULED")return res.status(409).json({error:"Agendamento não está ativo."});const updated=await prisma.$transaction(async tx=>{const item=await tx.appointment.update({where:{id:a.id},data:{status:"CANCELLED",cancelledAt:new Date()}});if(item.slotId)await tx.scheduleSlot.update({where:{id:item.slotId},data:{isOpen:true}});return item});await log(req.user.id,"APPOINTMENT_CANCELLED","Appointment",a.id);res.json({appointment:updated})});
-app.get("/api/vaccines",async(q,s)=>{const [vaccines,calendar]=await Promise.all([prisma.vaccine.findMany({where:{active:true},orderBy:{name:"asc"}}),prisma.immunizationEvent.findMany({where:{startsAt:{gte:new Date()},OR:[{endsAt:null},{endsAt:{gte:new Date()}}]},orderBy:{startsAt:"asc"}})]);s.json({vaccines,calendar})});
-app.post("/api/vaccines",auth(),roles("NURSE","ADMIN"),async(req,res)=>{try{const d=z.object({name:z.string().min(2),description:z.string().min(5),targetGroup:z.string().min(2),doses:z.string().min(1)}).parse(req.body);const v=await prisma.vaccine.create({data:d});await log(req.user.id,"VACCINE_CREATED","Vaccine",v.id);res.status(201).json({vaccine:v})}catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Dados inválidos."})}});
-app.post("/api/immunization-events",auth(),roles("NURSE","ADMIN"),async(req,res)=>{
- try{
-  const d=z.object({title:z.string().min(3).max(120),description:z.string().min(5).max(500),startsAt:z.string().datetime(),endsAt:z.string().datetime().optional(),unit:z.string().min(2).max(120)}).parse(req.body);
-  const start=new Date(d.startsAt),end=d.endsAt?new Date(d.endsAt):null;
-  if(start<new Date()||(end&&end<start))return res.status(400).json({error:"Confira as datas do evento."});
-  const event=await prisma.immunizationEvent.create({data:{...d,startsAt:start,endsAt:end}});
-  await log(req.user.id,"IMMUNIZATION_EVENT_CREATED","ImmunizationEvent",event.id);
-  res.status(201).json({event});
- }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível cadastrar a campanha."})}
+app.get("/api/vaccines",async(q,s)=>{
+ const now=new Date();
+ await prisma.immunizationEvent.updateMany({where:{active:true,endsAt:{lt:now},archivedAt:null},data:{active:false,archivedAt:now}});
+ const [vaccines,calendar]=await Promise.all([prisma.vaccine.findMany({where:{active:true},orderBy:{name:"asc"}}),prisma.immunizationEvent.findMany({where:{active:true,startsAt:{lte:now},OR:[{endsAt:null},{endsAt:{gte:now}}]},orderBy:{startsAt:"asc"}})]);
+ s.json({vaccines,calendar});
 });
+app.post("/api/vaccines",auth(),roles("NURSE","ADMIN"),async(req,res)=>{try{const d=z.object({name:z.string().min(2).max(120),description:z.string().min(5).max(1000),targetGroup:z.string().min(2).max(240),doses:z.string().min(1).max(120),imageData:imageSchema}).parse(req.body);const v=await prisma.vaccine.create({data:d});await log(req.user.id,"VACCINE_CREATED","Vaccine",v.id);res.status(201).json({vaccine:v})}catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Dados inválidos."})}});
+app.patch("/api/vaccines/:id",auth(),roles("NURSE","ADMIN"),async(req,res)=>{try{const d=z.object({name:z.string().min(2).max(120).optional(),description:z.string().min(5).max(1000).optional(),targetGroup:z.string().min(2).max(240).optional(),doses:z.string().min(1).max(120).optional(),imageData:imageSchema,active:z.boolean().optional()}).parse(req.body);const v=await prisma.vaccine.update({where:{id:req.params.id},data:d});await log(req.user.id,"VACCINE_UPDATED","Vaccine",v.id);res.json({vaccine:v})}catch(e){res.status(e.code==="P2025"?404:400).json({error:e.errors?.[0]?.message||"Não foi possível atualizar a vacina."})}});
+app.get("/api/admin/immunization-events",auth(),roles("NURSE","ADMIN"),async(req,res)=>{const now=new Date();await prisma.immunizationEvent.updateMany({where:{active:true,endsAt:{lt:now},archivedAt:null},data:{active:false,archivedAt:now}});const events=await prisma.immunizationEvent.findMany({orderBy:{createdAt:"desc"},include:{editions:{select:{id:true,title:true,startsAt:true,endsAt:true,active:true}}});res.json({events})});
+app.post("/api/immunization-events",auth(),roles("NURSE","ADMIN"),async(req,res)=>{
+ try{const d=z.object({title:z.string().min(3).max(120),description:z.string().min(5).max(1000),startsAt:z.string().datetime(),endsAt:z.string().datetime(),unit:z.string().min(2).max(120),imageData:imageSchema,parentCampaignId:z.string().uuid().optional()}).parse(req.body);const start=new Date(d.startsAt),end=new Date(d.endsAt);if(end<start)return res.status(400).json({error:"A data final deve ser posterior à inicial."});const event=await prisma.immunizationEvent.create({data:{...d,startsAt:start,endsAt:end}});await log(req.user.id,"IMMUNIZATION_EVENT_CREATED","ImmunizationEvent",event.id);res.status(201).json({event})}catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível cadastrar a campanha."})}
+});
+app.patch("/api/immunization-events/:id",auth(),roles("NURSE","ADMIN"),async(req,res)=>{try{const d=z.object({title:z.string().min(3).max(120).optional(),description:z.string().min(5).max(1000).optional(),startsAt:z.string().datetime().optional(),endsAt:z.string().datetime().optional(),unit:z.string().min(2).max(120).optional(),imageData:imageSchema,active:z.boolean().optional()}).parse(req.body);const data={...d};if(d.startsAt)data.startsAt=new Date(d.startsAt);if(d.endsAt)data.endsAt=new Date(d.endsAt);const event=await prisma.immunizationEvent.update({where:{id:req.params.id},data});await log(req.user.id,"IMMUNIZATION_EVENT_UPDATED","ImmunizationEvent",event.id);res.json({event})}catch(e){res.status(e.code==="P2025"?404:400).json({error:e.errors?.[0]?.message||"Não foi possível atualizar a campanha."})}});
+app.post("/api/immunization-events/:id/reuse",auth(),roles("NURSE","ADMIN"),async(req,res)=>{try{const old=await prisma.immunizationEvent.findUnique({where:{id:req.params.id}});if(!old)return res.status(404).json({error:"Campanha anterior não encontrada."});const d=z.object({title:z.string().min(3).max(120).optional(),description:z.string().min(5).max(1000).optional(),startsAt:z.string().datetime(),endsAt:z.string().datetime(),unit:z.string().min(2).max(120).optional(),imageData:imageSchema}).parse(req.body);const start=new Date(d.startsAt),end=new Date(d.endsAt);if(end<start)return res.status(400).json({error:"A data final deve ser posterior à inicial."});const event=await prisma.immunizationEvent.create({data:{title:d.title||old.title,description:d.description||old.description,startsAt:start,endsAt:end,unit:d.unit||old.unit,imageData:d.imageData===undefined?old.imageData:d.imageData,parentCampaignId:old.parentCampaignId||old.id}});await log(req.user.id,"IMMUNIZATION_EVENT_REUSED","ImmunizationEvent",event.id);res.status(201).json({event,message:"Nova edição criada a partir da campanha anterior."})}catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível reutilizar a campanha."})}});
 app.get("/api/staff/patients",auth(),roles("DOCTOR","ADMIN"),async(req,res)=>{
  let patientIds;
  if(req.user.role==="DOCTOR"){
