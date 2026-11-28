@@ -77,7 +77,7 @@ app.patch("/api/admin/period-schedules/:id",auth(),roles("ADMIN"),async(req,res)
 });
 app.post("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
  try{
-  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),date:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),period:periodSchema,startsAt:z.string().datetime(),endsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
+  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),period:periodSchema,startsAt:z.string().datetime(),endsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
   const start=new Date(d.startsAt),end=new Date(d.endsAt),day=new Date(d.date+"T00:00:00.000Z");
   if(start<=new Date()||end<=start)return res.status(400).json({error:"Confira a data e o intervalo do período."});
   const [doctor,unit,assignment]=await Promise.all([prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}})]);
