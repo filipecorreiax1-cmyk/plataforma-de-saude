@@ -279,76 +279,63 @@ $("#reg-cpf").addEventListener("input", (event) => {
 });
 
 async function loadScheduleData() {
-  $("#schedule-error").textContent = "";
-  $("#schedule-unit").innerHTML = '<option value="">Carregando unidades...</option>';
-  $("#unit-select").innerHTML = '<option value="">Carregando unidades...</option>';
-  const [unitsResult, doctorsResult] = await Promise.all([api("/api/units"), api("/api/staff/doctors")]);
-  const groups = await Promise.all(doctorsResult.doctors.map(async doctor => {
-    const result = await api("/api/staff/slots?doctorId=" + encodeURIComponent(doctor.id));
-    return result.slots.map(slot => ({...slot, doctorId:doctor.id, doctorName:doctor.name}));
-  }));
-  scheduleSlots = groups.flat();
-  const units = unitsResult.units;
-  const options = units.length
-    ? '<option value="">Selecione uma unidade</option>' + units.map(unit=>'<option value="'+unit.id+'">'+escapeHtml(unit.name+' — '+unit.municipality)+'</option>').join("")
-    : '<option value="">Nenhuma unidade com horário disponível</option>';
-  $("#schedule-unit").innerHTML = options;
-  $("#unit-select").innerHTML = options;
-  if (selectedUnit && units.some(unit=>unit.id===selectedUnit)) {
-    $("#schedule-unit").value = selectedUnit;
-    $("#unit-select").value = selectedUnit;
-    updateSpecialties();
-  } else {
-    selectedUnit = "";
-    $("#schedule-specialty").innerHTML = '<option value="">Selecione primeiro a unidade</option>';
-    $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
-    $("#schedule-specialty").disabled = true;
-    $("#doctor").disabled = true;
-    $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+  $("#schedule-error").textContent="";
+  $("#schedule-unit").innerHTML='<option value="">Carregando unidades...</option>';
+  $("#unit-select").innerHTML='<option value="">Carregando unidades...</option>';
+  const {units}=await api("/api/units");
+  const options=units.length?'<option value="">Selecione uma unidade</option>'+units.map(u=>'<option value="'+u.id+'">'+escapeHtml(u.name+" — "+u.municipality)+'</option>').join(""):'<option value="">Nenhuma unidade com agenda disponível</option>';
+  $("#schedule-unit").innerHTML=options;
+  $("#unit-select").innerHTML=options;
+  if(selectedUnit&&units.some(u=>u.id===selectedUnit)){
+    $("#schedule-unit").value=selectedUnit;$("#unit-select").value=selectedUnit;await updateSpecialties();
+  }else{
+    selectedUnit="";
+    $("#schedule-specialty").innerHTML='<option value="">Selecione primeiro a unidade</option>';
+    $("#doctor").innerHTML='<option value="">Selecione primeiro a especialidade</option>';
+    $("#schedule-specialty").disabled=true;$("#doctor").disabled=true;
+    $("#period-schedule").innerHTML='<option value="">Selecione os dados acima</option>';
   }
+  const dateInput=$("#schedule-date");
+  if(!dateInput.value){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());dateInput.min=d.toISOString().slice(0,10);dateInput.value=dateInput.min;}
 }
-
-function updateSpecialties() {
-  const unitId = $("#schedule-unit").value;
-  const values = [...new Set(scheduleSlots.filter(slot=>slot.healthUnitId===unitId).map(slot=>slot.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
-  $("#schedule-specialty").innerHTML = values.length
-    ? '<option value="">Selecione uma especialidade</option>' + values.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")
-    : '<option value="">Nenhuma especialidade disponível</option>';
-  $("#schedule-specialty").disabled = !values.length;
-  $("#doctor").disabled = true;
-  $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
-  $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+let availablePeriods=[];
+async function fetchPeriods(){
+ const unitId=$("#schedule-unit").value,date=$("#schedule-date").value;
+ if(!unitId)return [];
+ const query=new URLSearchParams({unitId});
+ if(date)query.set("date",date);
+ const result=await api("/api/period-schedules?"+query.toString());
+ return result.schedules;
 }
-
-function updateDoctors() {
-  const unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value;
-  const doctors=new Map();
-  scheduleSlots.filter(slot=>slot.healthUnitId===unitId&&slot.specialty===specialty).forEach(slot=>doctors.set(slot.doctorId,slot.doctorName));
-  $("#doctor").innerHTML = doctors.size
-    ? '<option value="">Selecione um profissional</option>' + [...doctors].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join("")
-    : '<option value="">Nenhum profissional com horário disponível</option>';
-  $("#doctor").disabled = !doctors.size;
-  $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+async function updateSpecialties(){
+ const unitId=$("#schedule-unit").value;
+ if(!unitId){$("#schedule-specialty").disabled=true;return;}
+ try{
+  availablePeriods=await fetchPeriods();
+  const values=[...new Set(availablePeriods.map(x=>x.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  $("#schedule-specialty").innerHTML=values.length?'<option value="">Selecione uma especialidade</option>'+values.map(v=>'<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>').join(""):'<option value="">Nenhuma especialidade nesta data</option>';
+  $("#schedule-specialty").disabled=!values.length;
+  $("#doctor").disabled=true;$("#doctor").innerHTML='<option value="">Selecione primeiro a especialidade</option>';
+  $("#period-schedule").innerHTML='<option value="">Selecione primeiro o profissional</option>';
+ }catch(e){$("#schedule-error").textContent=e.message;}
 }
-
+async function updateDoctors(){
+ const specialty=$("#schedule-specialty").value;
+ const doctors=new Map(availablePeriods.filter(x=>x.specialty===specialty).map(x=>[x.doctor.id,x.doctor.name]));
+ $("#doctor").innerHTML=doctors.size?'<option value="">Selecione um profissional</option>'+[...doctors].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,n])=>'<option value="'+id+'">'+escapeHtml(n)+'</option>').join(""):'<option value="">Nenhum médico disponível</option>';
+ $("#doctor").disabled=!doctors.size;
+ await loadPeriodOptions();
+}
+async function loadPeriodOptions(){
+ const doctorId=$("#doctor").value,specialty=$("#schedule-specialty").value,period=$("#schedule-period").value;
+ const rows=availablePeriods.filter(x=>x.doctor.id===doctorId&&x.specialty===specialty&&x.period===period);
+ $("#period-schedule").innerHTML=rows.length?'<option value="">Selecione o período</option>'+rows.map(x=>'<option value="'+x.id+'">'+new Date(x.startsAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+' às '+new Date(x.endsAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+' · '+x.remaining+' vaga(s)</option>').join(""):'<option value="">Sem disponibilidade neste período</option>';
+}
 $("#schedule-unit").addEventListener("change",updateSpecialties);
 $("#schedule-specialty").addEventListener("change",updateDoctors);
-$("#doctor").addEventListener("change",loadSlots);
-$("#schedule-period").addEventListener("change",loadSlots);
-
-function loadSlots() {
-  const doctorId=$("#doctor").value, unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value, period=$("#schedule-period").value;
-  if (!doctorId) { $("#slot").innerHTML='<option value="">Selecione o profissional</option>'; return; }
-  const rows=scheduleSlots.filter(slot=>{
-    if(slot.doctorId!==doctorId||slot.healthUnitId!==unitId||slot.specialty!==specialty)return false;
-    const hour=new Date(slot.startsAt).getHours();
-    return period==="morning"?hour<12:period==="afternoon"?hour>=12:true;
-  }).sort((a,b)=>new Date(a.startsAt)-new Date(b.startsAt));
-  $("#slot").innerHTML=rows.length
-    ? '<option value="">Selecione o horário disponível</option>'+rows.map(slot=>'<option value="'+slot.id+'">'+new Date(slot.startsAt).toLocaleString("pt-BR")+'</option>').join("")
-    : '<option value="">Nenhum horário neste período</option>';
-}
-
+$("#doctor").addEventListener("change",loadPeriodOptions);
+$("#schedule-period").addEventListener("change",loadPeriodOptions);
+$("#schedule-date").addEventListener("change",async()=>{await updateSpecialties();});
 $("#unit-open").addEventListener("click",async()=>{
   try { await loadScheduleData(); openDialog("#unit-dialog"); }
   catch(error) { toast(error.message); }
@@ -381,7 +368,7 @@ $("#schedule-form").addEventListener("submit", async (event) => {
   try {
     await api("/api/appointments", {
       method: "POST",
-      body: JSON.stringify({ slotId: $("#slot").value })
+      body: JSON.stringify({ periodScheduleId: $("#period-schedule").value })
     });
     closeDialog("#schedule-dialog");
     toast("Agendamento registrado.");
