@@ -220,7 +220,7 @@ app.patch("/api/appointments/:id/cancel",auth(),roles("PATIENT","ADMIN"),async(r
 app.get("/api/vaccines",async(q,s)=>{
  const now=new Date();
  await prisma.immunizationEvent.updateMany({where:{active:true,endsAt:{lt:now},archivedAt:null},data:{active:false,archivedAt:now}});
- const [vaccines,calendar]=await Promise.all([prisma.vaccine.findMany({where:{active:true},orderBy:{name:"asc"}}),prisma.immunizationEvent.findMany({where:{active:true,startsAt:{lte:now},OR:[{endsAt:null},{endsAt:{gte:now}}]},orderBy:{startsAt:"asc"}})]);
+ const [vaccines,calendar]=await Promise.all([prisma.vaccine.findMany({where:{active:true},orderBy:{name:"asc"}}),prisma.immunizationEvent.findMany({where:{active:true,OR:[{endsAt:null},{endsAt:{gte:now}}]},orderBy:{startsAt:"asc"}})]);
  s.json({vaccines,calendar});
 });
 app.get("/api/admin/vaccines",auth(),roles("NURSE","ADMIN"),async(req,res)=>{const vaccines=await prisma.vaccine.findMany({orderBy:{updatedAt:"desc"}});res.json({vaccines})});
