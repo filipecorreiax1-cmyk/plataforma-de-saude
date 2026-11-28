@@ -45,7 +45,7 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  res.json({message:"Autenticação em duas etapas ativada."});
 });
 app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null},healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},OR:[{availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},{doctorPeriodSchedules:{some:{active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},healthUnit:{is:{active:true}},appointments:{none:{status:"SCHEDULED"}}}}}]},select:{id:true,name:true}});s.json({doctors})});
-app.get("/api/units",async(q,s)=>{try{const units=await prisma.healthUnit.findMany({where:{active:true},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
+app.get("/api/units",async(q,s)=>{try{const units=await prisma.healthUnit.findMany({where:{active:true},select:{id:true,name:true,municipality:true,address:true,latitude:true,longitude:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
 app.get("/api/staff/slots",async(req,res)=>{
  const doctorId=String(req.query.doctorId||"");
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
@@ -127,7 +127,7 @@ app.get("/api/admin/units",auth(),roles("ADMIN"),async(q,s)=>{
 });
 app.post("/api/admin/units",auth(),roles("ADMIN"),async(req,res)=>{
  try{
-  const d=z.object({name:z.string().trim().min(3).max(120),address:z.string().trim().min(5).max(240),phone:z.string().trim().max(30).optional().default(""),municipality:z.string().trim().min(2).max(120),coverageArea:z.string().trim().max(240).optional().default("")}).parse(req.body);
+  const d=z.object({name:z.string().trim().min(3).max(120),address:z.string().trim().min(5).max(240),phone:z.string().trim().max(30).optional().default(""),municipality:z.string().trim().min(2).max(120),coverageArea:z.string().trim().max(240).optional().default(""),latitude:z.number().min(-90).max(90).nullable().optional(),longitude:z.number().min(-180).max(180).nullable().optional()}).parse(req.body);
   const unit=await prisma.healthUnit.create({data:{...d,active:false}});
   await log(req.user.id,"HEALTH_UNIT_CREATED","HealthUnit",unit.id);
   res.status(201).json({unit,message:"Unidade cadastrada como Em preparação. Ative-a somente após revisar os dados."});
@@ -135,7 +135,7 @@ app.post("/api/admin/units",auth(),roles("ADMIN"),async(req,res)=>{
 });
 app.patch("/api/admin/units/:id",auth(),roles("ADMIN"),async(req,res)=>{
  try{
-  const d=z.object({name:z.string().trim().min(3).max(120).optional(),address:z.string().trim().min(5).max(240).optional(),phone:z.string().trim().max(30).optional(),municipality:z.string().trim().min(2).max(120).optional(),coverageArea:z.string().trim().max(240).optional(),active:z.boolean().optional()}).refine(v=>Object.keys(v).length>0).parse(req.body);
+  const d=z.object({name:z.string().trim().min(3).max(120).optional(),address:z.string().trim().min(5).max(240).optional(),phone:z.string().trim().max(30).optional(),municipality:z.string().trim().min(2).max(120).optional(),coverageArea:z.string().trim().max(240).optional(),latitude:z.number().min(-90).max(90).nullable().optional(),longitude:z.number().min(-180).max(180).nullable().optional(),active:z.boolean().optional()}).refine(v=>Object.keys(v).length>0).parse(req.body);
   const unit=await prisma.$transaction(async tx=>{
    const updated=await tx.healthUnit.update({where:{id:req.params.id},data:d});
    if(d.active===false)await tx.scheduleSlot.updateMany({where:{healthUnitId:updated.id,isOpen:true,startsAt:{gt:new Date()}},data:{isOpen:false}});
