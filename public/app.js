@@ -55,15 +55,43 @@ async function restoreSession() {
   }
 }
 
+let operationCount=0,operationHideTimer=null;
+function showOperationStatus(message,state="loading"){
+ let node=document.querySelector("#operation-status");
+ if(!node){node=document.createElement("div");node.id="operation-status";node.className="operation-status";node.setAttribute("role","status");node.setAttribute("aria-live","polite");document.body.appendChild(node)}
+ node.className="operation-status is-visible "+(state==="loading"?"is-loading":state==="error"?"is-error":"is-success");
+ node.innerHTML=state==="loading"?'<span class="operation-spinner" aria-hidden="true"></span><span>'+message+'</span>':'<span aria-hidden="true">'+(state==="error"?"!":"✓")+'</span><span>'+message+'</span>';
+}
+function startOperation(method){
+ operationCount++;if(operationHideTimer)clearTimeout(operationHideTimer);
+ const label=method==="POST"?"Criando / salvando...":method==="PATCH"?"Alterando...":method==="DELETE"?"Removendo...":"Processando...";
+ showOperationStatus(label,"loading");
+}
+function finishOperation(error){
+ operationCount=Math.max(0,operationCount-1);
+ if(operationCount>0)return;
+ showOperationStatus(error?"Não foi possível concluir. Confira a mensagem na tela.":"Concluído com sucesso.",error?"error":"success");
+ operationHideTimer=setTimeout(()=>{if(operationCount===0){const node=document.querySelector("#operation-status");node?.classList.remove("is-visible")}},1800);
+}
+
 async function api(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Não foi possível concluir a solicitação.");
-  return data;
+  const method = (options.method || "GET").toUpperCase();
+  const mutating = ["POST", "PATCH", "PUT", "DELETE"].includes(method);
+  if (mutating) startOperation(method);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Não foi possível concluir a solicitação.");
+    if (mutating) finishOperation(false);
+    return data;
+  } catch (error) {
+    if (mutating) finishOperation(true);
+    throw error;
+  }
 }
 
 function toast(message) {
