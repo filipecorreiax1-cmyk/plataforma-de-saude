@@ -36,7 +36,6 @@ model User {
   createdAt       DateTime      @default(now())
   privacyNoticeAcceptedAt DateTime?
   patientAppointments Appointment[] @relation("PatientAppointments")
-  doctorPeriodSchedules DoctorPeriodSchedule[]
   doctorAppointments  Appointment[] @relation("DoctorAppointments")
   auditEvents     AuditEvent[]
   availableSlots  ScheduleSlot[]
