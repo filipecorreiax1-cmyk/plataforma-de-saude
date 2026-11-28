@@ -1,6 +1,20 @@
 const $ = (selector) => document.querySelector(selector);
 let currentUser = null;
-let selectedUnit = "";
+const SELECTED_UNIT_STORAGE_KEY = "saude-perto:selected-unit";
+let selectedUnit = (() => {
+  try { return localStorage.getItem(SELECTED_UNIT_STORAGE_KEY) || ""; }
+  catch { return ""; }
+})();
+
+function saveSelectedUnit(unitId) {
+  selectedUnit = unitId || "";
+  try {
+    if (selectedUnit) localStorage.setItem(SELECTED_UNIT_STORAGE_KEY, selectedUnit);
+    else localStorage.removeItem(SELECTED_UNIT_STORAGE_KEY);
+  } catch {
+    // A seleção continua válida nesta página mesmo se o navegador bloquear o armazenamento.
+  }
+}
 let scheduleSlots = [];
 
 function setAuthenticatedUser(user) {
@@ -287,9 +301,11 @@ async function loadScheduleData() {
   $("#schedule-unit").innerHTML=options;
   $("#unit-select").innerHTML=options;
   if(selectedUnit&&units.some(u=>u.id===selectedUnit)){
-    $("#schedule-unit").value=selectedUnit;$("#unit-select").value=selectedUnit;await updateSpecialties();
+    $("#schedule-unit").value=selectedUnit;$("#unit-select").value=selectedUnit;
+    $("#unit-label").textContent=$("#unit-select").selectedOptions[0]?.textContent||"Unidade selecionada";
+    await updateSpecialties();
   }else{
-    selectedUnit="";
+    saveSelectedUnit("");
     $("#schedule-specialty").innerHTML='<option value="">Selecione primeiro a unidade</option>';
     $("#doctor").innerHTML='<option value="">Selecione primeiro a especialidade</option>';
     $("#schedule-specialty").disabled=true;$("#doctor").disabled=true;
@@ -331,7 +347,10 @@ async function loadPeriodOptions(){
  const rows=availablePeriods.filter(x=>x.doctor.id===doctorId&&x.specialty===specialty&&x.period===period);
  $("#period-schedule").innerHTML=rows.length?'<option value="">Selecione o período</option>'+rows.map(x=>'<option value="'+x.id+'">'+new Date(x.startsAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+' às '+new Date(x.endsAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+' · '+x.remaining+' vaga(s)</option>').join(""):'<option value="">Sem disponibilidade neste período</option>';
 }
-$("#schedule-unit").addEventListener("change",updateSpecialties);
+$("#schedule-unit").addEventListener("change",() => {
+  if ($("#schedule-unit").value) saveSelectedUnit($("#schedule-unit").value);
+  updateSpecialties();
+});
 $("#schedule-specialty").addEventListener("change",updateDoctors);
 $("#doctor").addEventListener("change",loadPeriodOptions);
 $("#schedule-period").addEventListener("change",loadPeriodOptions);
@@ -343,7 +362,7 @@ $("#unit-open").addEventListener("click",async()=>{
 $("#unit-form").addEventListener("submit",event=>{
   event.preventDefault();
   if(!$("#unit-select").value)return;
-  selectedUnit=$("#unit-select").value;
+  saveSelectedUnit($("#unit-select").value);
   $("#unit-label").textContent=$("#unit-select").selectedOptions[0]?.textContent||"Unidade selecionada";
   $("#unit-dialog").close();
 });
