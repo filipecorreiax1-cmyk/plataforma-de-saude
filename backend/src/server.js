@@ -102,7 +102,7 @@ app.patch("/api/admin/period-schedules/:id",auth(),roles("ADMIN"),async(req,res)
 });
 app.post("/api/admin/recurring-periods",auth(),roles("ADMIN"),async(req,res)=>{
  try{
-  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),validFrom:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),validUntil:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).optional().nullable(),weekdays:z.array(z.number().int().min(0).max(6)).min(1).max(7),period:periodSchema,startsAtTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),endsAtTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
+  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),validFrom:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),validUntil:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),weekdays:z.array(z.number().int().min(0).max(6)).min(1).max(7),period:periodSchema,startsAtTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),endsAtTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
   const from=new Date(d.validFrom+"T00:00:00.000Z"),to=d.validUntil?new Date(d.validUntil+"T00:00:00.000Z"):null;
   if(to&&to<from)return res.status(400).json({error:"A data final deve ser igual ou posterior à data inicial."});
   if(d.endsAtTime<=d.startsAtTime)return res.status(400).json({error:"O fim do atendimento deve ser depois do início."});
