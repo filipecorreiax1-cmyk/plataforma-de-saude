@@ -65,8 +65,8 @@ async function materializeRecurringPeriods(unitId, horizonDays=30){
   for(let day=new Date(from);day<=last;day.setUTCDate(day.getUTCDate()+1)){
    if(!rule.weekdays.includes(day.getUTCDay()))continue;
    const [sh,sm]=rule.startsAtTime.split(":").map(Number),[eh,em]=rule.endsAtTime.split(":").map(Number);
-   const startsAt=new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),sh,sm));
-   const endsAt=new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),eh,em));
+   const startsAt=new Date(day.toISOString().slice(0,10)+"T"+rule.startsAtTime+":00-03:00");
+   const endsAt=new Date(day.toISOString().slice(0,10)+"T"+rule.endsAtTime+":00-03:00");
    if(startsAt<=new Date())continue;
    await prisma.doctorPeriodSchedule.createMany({data:[{doctorId:rule.doctorId,healthUnitId:rule.healthUnitId,date:new Date(day),period:rule.period,startsAt,endsAt,specialty:rule.specialty,capacity:rule.capacity,active:true,recurringPeriodId:rule.id}],skipDuplicates:true});
   }
