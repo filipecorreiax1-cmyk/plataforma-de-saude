@@ -67,6 +67,14 @@ app.get("/api/period-schedules",async(req,res)=>{
   res.json({schedules:schedules.filter(x=>x.appointments.length<x.capacity).map(x=>({id:x.id,date:x.date,period:x.period,startsAt:x.startsAt,endsAt:x.endsAt,specialty:x.specialty,unitId:x.healthUnitId,unit:x.healthUnitId,doctor:x.doctor,capacity:x.capacity,remaining:x.capacity-x.appointments.length}))});
  }catch(e){res.status(500).json({error:"Não foi possível carregar os períodos disponíveis."})}
 });
+app.get("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
+ const schedules=await prisma.doctorPeriodSchedule.findMany({include:{doctor:{select:{id:true,name:true}},healthUnit:{select:{id:true,name:true}},_count:{select:{appointments:true}}},orderBy:[{date:"desc"},{startsAt:"asc"}],take:150});
+ const rows=await Promise.all(schedules.map(async x=>({...x,booked:await prisma.appointment.count({where:{periodScheduleId:x.id,status:"SCHEDULED"}})})));
+ res.json({schedules:rows});
+});
+app.patch("/api/admin/period-schedules/:id",auth(),roles("ADMIN"),async(req,res)=>{
+ try{const {active}=z.object({active:z.boolean()}).parse(req.body);const item=await prisma.doctorPeriodSchedule.update({where:{id:req.params.id},data:{active}});await log(req.user.id,active?"DOCTOR_PERIOD_ACTIVATED":"DOCTOR_PERIOD_DEACTIVATED","DoctorPeriodSchedule",item.id);res.json({schedule:item,message:active?"Período reativado.":"Período desativado para novas reservas."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar o período."})}
+});
 app.post("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
  try{
   const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),date:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),period:periodSchema,startsAt:z.string().datetime(),endsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
