@@ -55,8 +55,9 @@ app.get("/api/staff/slots",async(req,res)=>{
 
 const periodSchema=z.enum(["MORNING","AFTERNOON","EVENING"]);
 const imageSchema=z.string().max(5_000_000).optional().nullable().refine(v=>!v||/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),"Envie uma imagem PNG, JPG ou WebP válida.");
-async function materializeRecurringPeriods(unitId, horizonDays=30){
- const today=new Date();today.setUTCHours(0,0,0,0);
+async function materializeRecurringPeriods(unitId, horizonDays=1){
+ const localToday=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ const today=new Date(localToday+"T00:00:00.000Z");
  const until=new Date(today);until.setUTCDate(until.getUTCDate()+horizonDays);
  const rules=await prisma.doctorRecurringPeriod.findMany({where:{healthUnitId:unitId,active:true,validFrom:{lte:until},OR:[{validUntil:null},{validUntil:{gte:today}}],doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}}}});
  for(const rule of rules){
@@ -78,9 +79,15 @@ app.get("/api/period-schedules",async(req,res)=>{
   const specialty=String(req.query.specialty||"");
   const date=String(req.query.date||"");
   if(!unitId)return res.status(400).json({error:"Selecione a unidade."});
-  await materializeRecurringPeriods(unitId);
-  const where={healthUnitId:unitId,active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},startsAt:{gt:new Date()},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}},...(specialty?{specialty}:{})};
-  if(date)where.date=new Date(date+"T00:00:00.000Z");
+  const localToday=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const tomorrowDate=new Date(localToday+"T00:00:00.000Z");tomorrowDate.setUTCDate(tomorrowDate.getUTCDate()+1);
+  const tomorrow=tomorrowDate.toISOString().slice(0,10);
+  await materializeRecurringPeriods(unitId,1);
+  const where={healthUnitId:unitId,active:true,date:{gte:new Date(localToday+"T00:00:00.000Z"),lte:new Date(tomorrow+"T00:00:00.000Z")},startsAt:{gt:new Date()},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}},...(specialty?{specialty}:{})};
+  if(date){
+   if(date!==localToday&&date!==tomorrow)return res.json({schedules:[]});
+   where.date=new Date(date+"T00:00:00.000Z");
+  }
   const schedules=await prisma.doctorPeriodSchedule.findMany({where,include:{doctor:{select:{id:true,name:true}},appointments:{where:{status:"SCHEDULED"},select:{id:true}}},orderBy:[{date:"asc"},{startsAt:"asc"},{doctor:{name:"asc"}}]});
   res.json({schedules:schedules.filter(x=>x.appointments.length<x.capacity).map(x=>({id:x.id,date:x.date,period:x.period,startsAt:x.startsAt,endsAt:x.endsAt,specialty:x.specialty,unitId:x.healthUnitId,unit:x.healthUnitId,doctor:x.doctor,capacity:x.capacity,remaining:x.capacity-x.appointments.length}))});
  }catch(e){res.status(500).json({error:"Não foi possível carregar os períodos disponíveis."})}
