@@ -2,6 +2,21 @@ const $=s=>document.querySelector(s);
 const api=async(u,o={})=>{const r=await fetch(u,{...o,credentials:"same-origin",headers:{"Content-Type":"application/json",...(o.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Não foi possível concluir.");return d};
 const toast=m=>{const t=$("#staff-toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3500)};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+document.querySelectorAll("[data-staff-password-toggle]").forEach(button=>{
+ button.addEventListener("click",()=>{
+  const input=document.getElementById(button.dataset.staffPasswordToggle);
+  if(!input)return;
+  const showing=input.type==="password";
+  input.type=showing?"text":"password";
+  button.setAttribute("aria-label",showing?"Ocultar senha":"Mostrar senha");
+  button.setAttribute("aria-pressed",String(showing));
+  button.innerHTML=showing
+   ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.9"/><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>'
+   : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+ });
+});
+
 let currentUser=null,pending2faId=null,adminUnits=[],adminDoctors=[],adminStaff=[];
 async function init(){try{const d=await api("/api/auth/me");currentUser=d.user;if(currentUser.role==="PATIENT"){location.replace("/");return}$("#staff-identity").textContent=currentUser.name+" · "+currentUser.role;$("#staff-title").textContent="Olá, "+currentUser.name.split(" ")[0];$("#staff-description").textContent="Gerencie as tarefas autorizadas para seu perfil.";
 if(currentUser.role==="DOCTOR"){$("#doctor-area").hidden=false;await loadDoctorAppointments()}
