@@ -756,3 +756,17 @@ input:focus, select:focus, .staff-form textarea:focus {
 }
 
 .admin-sidebar[hidden],.admin-menu-toggle[hidden]{display:none!important}
+
+
+/* Organização por grupos no menu administrativo */
+.admin-nav-group{display:block;padding:13px 10px 4px;color:#82949a;font-size:10px;font-weight:800;letter-spacing:.09em}
+.admin-sidebar-nav a{min-height:42px}
+.admin-sidebar-nav a span{display:inline-grid;place-items:center;width:20px;height:20px;flex:0 0 20px}
+.admin-sidebar-nav a[href="#vaccine-area"] span{font-size:15px}
+.campaign-image{display:block;width:100%;max-width:420px;max-height:190px;object-fit:cover;border-radius:12px;margin:8px 0 12px;border:1px solid #e4eeec}
+.reschedule-panel{display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid #dce9e7;border-radius:12px;background:#f7fbfa}
+.reschedule-panel[hidden]{display:none}
+.reschedule-panel label{display:grid;gap:5px;font-size:12px;font-weight:700;color:#48616b}
+.reschedule-panel input,.reschedule-panel select{width:100%;min-height:42px;padding:9px 11px;border:1px solid #d4e1df;border-radius:9px;background:#fff;color:#203941}
+#vaccine-area{scroll-margin-top:22px}
+@media(max-width:900px){.admin-nav-group{grid-column:1/-1}.admin-sidebar-nav{gap:5px 8px}}
