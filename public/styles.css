@@ -795,3 +795,44 @@ input:focus, select:focus, .staff-form textarea:focus {
  .admin-menu-backdrop.show{opacity:1;visibility:visible}
 }
 @media(min-width:901px){.admin-menu-toggle,.admin-menu-backdrop{display:none!important}.admin-sidebar{transform:none!important;visibility:visible!important}}
+
+
+/* Refinamento visual do painel ADM */
+.admin-shell{grid-template-columns:260px minmax(0,1fr);column-gap:24px;row-gap:18px}
+.admin-page-title{font-size:clamp(23px,3vw,30px);font-weight:800;letter-spacing:-.035em;color:#173943;padding:4px 0 13px;border-bottom:1px solid #e7efed}
+.admin-sidebar{background:linear-gradient(180deg,#fff 0%,#f9fcfb 100%);border:1px solid #dfeae8;border-radius:18px;padding:17px 12px;box-shadow:0 12px 30px rgba(22,57,67,.07)}
+.admin-sidebar-heading{padding:7px 9px 17px}
+.admin-sidebar-heading .brand-mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#d8f1ec,#e8f4fb);color:#087f80;font-size:15px}
+.admin-sidebar-heading b{font-size:14px;color:#183d46}
+.admin-sidebar-heading small{font-size:11px;color:#82949a}
+.admin-sidebar-nav{gap:4px;padding:13px 0}
+.admin-nav-group{padding:15px 11px 6px;color:#8a9b9f;font-size:9px;letter-spacing:.12em}
+.admin-sidebar-nav a{min-height:43px;padding:10px 12px;border-radius:11px;font-size:12px;color:#536b72;transition:background .18s ease,color .18s ease,transform .18s ease}
+.admin-sidebar-nav a span{font-size:16px;color:#56868a}
+.admin-sidebar-nav a:hover{background:#f0f7f5;transform:translateX(2px)}
+.admin-sidebar-nav a.active{background:#e6f4f1;color:#08777b;box-shadow:inset 3px 0 #0a8b87}
+.admin-sidebar-footer{margin-top:auto;color:#91a1a4;font-size:10px}
+.admin-content{min-width:0}
+.admin-view>.staff-form,.admin-view>section.staff-form{padding:25px;border:1px solid #e1ece9;border-radius:17px;background:#fff;box-shadow:0 8px 26px rgba(22,57,67,.045)}
+.admin-view h3{font-size:18px;letter-spacing:-.02em;color:#1d414a}
+.admin-view .muted{line-height:1.6}
+.admin-view .form-grid{gap:16px}
+.admin-view label{font-weight:650;color:#405c64}
+.admin-view input,.admin-view select{min-height:44px;border-radius:10px}
+.admin-view .button{min-height:43px;border-radius:10px;font-weight:700}
+.admin-menu-toggle{display:none}
+@media(max-width:900px){
+ .admin-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;gap:12px}
+ .admin-shell>.admin-page-title{grid-column:1;grid-row:1;align-self:center;margin:0;padding:5px 54px 13px 0;font-size:23px;line-height:1.2}
+ .admin-menu-toggle{display:inline-flex;grid-column:1;grid-row:1;justify-self:end;align-self:start;margin-top:0;width:44px;height:44px;min-height:44px;padding:0;justify-content:center;align-items:center;border-radius:13px;background:#fff;border:1px solid #dce8e5;color:#176e70;box-shadow:0 5px 16px rgba(24,61,70,.08);font-size:0}
+ .admin-menu-toggle span[aria-hidden="true"]{font-size:23px;line-height:1}
+ .admin-menu-label{display:none!important}
+ .admin-content{grid-column:1;grid-row:3}
+ .admin-sidebar{padding:18px 14px}
+ .admin-view>.staff-form,.admin-view>section.staff-form{padding:19px;border-radius:14px}
+}
+@media(max-width:480px){
+ .admin-shell>.admin-page-title{font-size:21px}
+ .admin-menu-toggle{width:42px;height:42px}
+ .admin-view>.staff-form,.admin-view>section.staff-form{padding:16px}
+}
