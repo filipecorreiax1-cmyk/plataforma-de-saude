@@ -297,6 +297,7 @@ async function loadScheduleData() {
   $("#schedule-unit").innerHTML='<option value="">Carregando unidades...</option>';
   $("#unit-select").innerHTML='<option value="">Carregando unidades...</option>';
   const {units}=await api("/api/units");
+  window.healthUnits=units;
   const options=units.length?'<option value="">Selecione uma unidade</option>'+units.map(u=>'<option value="'+u.id+'">'+escapeHtml(u.name+" — "+u.municipality)+'</option>').join(""):'<option value="">Nenhuma unidade com agenda disponível</option>';
   $("#schedule-unit").innerHTML=options;
   $("#unit-select").innerHTML=options;
