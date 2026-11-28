@@ -836,3 +836,16 @@ input:focus, select:focus, .staff-form textarea:focus {
  .admin-menu-toggle{width:42px;height:42px}
  .admin-view>.staff-form,.admin-view>section.staff-form{padding:16px}
 }
+
+/* Organização das ações de profissionais e unidades no painel administrativo */
+.staff-person-card,.unit-admin-card{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.staff-person-info p{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 0}
+.staff-role-tag,.staff-status-tag,.staff-2fa-tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eef4f5;color:#35535c;font-size:12px;font-weight:700}
+.staff-status-tag.is-active{background:#e7f5ed;color:#17623b}.staff-status-tag.is-inactive{background:#fff0ed;color:#9b382b}
+.staff-person-actions,.unit-admin-actions,.unit-form-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.unit-admin-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.unit-doctors-title{margin:8px 0 0}.unit-doctor-list{display:grid;gap:8px}
+.unit-doctor-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f5f8f8;border:1px solid #e2ebeb;border-radius:9px}
+.unit-doctor-name{font-weight:600;font-size:14px}.button-small{min-height:36px;padding:7px 11px;font-size:12px;margin:0!important}
+.unit-admin-actions{padding-top:4px;border-top:1px solid #edf1f1}
+@media(max-width:650px){.unit-doctor-row{align-items:flex-start;flex-direction:column}.unit-doctor-row .button{width:100%}.unit-admin-heading{align-items:flex-start}.staff-person-actions .button{width:100%}}
