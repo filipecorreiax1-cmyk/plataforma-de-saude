@@ -77,7 +77,8 @@ function finishOperation(error){
 async function api(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const mutating = ["POST", "PATCH", "PUT", "DELETE"].includes(method);
-  if (mutating) startOperation(method);
+  const trackOperation = mutating && !String(url).startsWith("/api/auth/");
+  if (trackOperation) startOperation(method);
   try {
     const response = await fetch(url, {
       ...options,
@@ -86,10 +87,10 @@ async function api(url, options = {}) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Não foi possível concluir a solicitação.");
-    if (mutating) finishOperation(false);
+    if (trackOperation) finishOperation(false);
     return data;
   } catch (error) {
-    if (mutating) finishOperation(true);
+    if (trackOperation) finishOperation(true);
     throw error;
   }
 }
