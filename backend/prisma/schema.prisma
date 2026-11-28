@@ -41,6 +41,7 @@ model User {
   availableSlots  ScheduleSlot[]
   healthUnitAssignments HealthUnitDoctor[]
   doctorPeriodSchedules DoctorPeriodSchedule[]
+  doctorSpecialties DoctorSpecialty[]
 }
 
 model Appointment {
@@ -171,4 +172,16 @@ model DoctorPeriodSchedule {
   @@unique([doctorId, healthUnitId, date, period])
   @@index([healthUnitId, date, period, active])
   @@index([doctorId, date, active])
+}
+
+
+model DoctorSpecialty {
+  id        String   @id @default(uuid())
+  doctorId  String
+  name      String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  doctor    User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  @@unique([doctorId, name])
+  @@index([name])
 }
