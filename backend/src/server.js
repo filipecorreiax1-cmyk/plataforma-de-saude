@@ -55,17 +55,41 @@ app.get("/api/staff/slots",async(req,res)=>{
 
 const periodSchema=z.enum(["MORNING","AFTERNOON","EVENING"]);
 const imageSchema=z.string().max(5_000_000).optional().nullable().refine(v=>!v||/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v),"Envie uma imagem PNG, JPG ou WebP válida.");
+async function materializeRecurringPeriods(unitId, horizonDays=30){
+ const today=new Date();today.setUTCHours(0,0,0,0);
+ const until=new Date(today);until.setUTCDate(until.getUTCDate()+horizonDays);
+ const rules=await prisma.doctorRecurringPeriod.findMany({where:{healthUnitId:unitId,active:true,validFrom:{lte:until},OR:[{validUntil:null},{validUntil:{gte:today}}],doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}}}});
+ for(const rule of rules){
+  const from=new Date(Math.max(today.getTime(),rule.validFrom.getTime()));from.setUTCHours(0,0,0,0);
+  const last=rule.validUntil&&rule.validUntil<until?rule.validUntil:until;
+  for(let day=new Date(from);day<=last;day.setUTCDate(day.getUTCDate()+1)){
+   if(!rule.weekdays.includes(day.getUTCDay()))continue;
+   const [sh,sm]=rule.startsAtTime.split(":").map(Number),[eh,em]=rule.endsAtTime.split(":").map(Number);
+   const startsAt=new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),sh,sm));
+   const endsAt=new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),eh,em));
+   if(startsAt<=new Date())continue;
+   await prisma.doctorPeriodSchedule.createMany({data:[{doctorId:rule.doctorId,healthUnitId:rule.healthUnitId,date:new Date(day),period:rule.period,startsAt,endsAt,specialty:rule.specialty,capacity:rule.capacity,active:true}],skipDuplicates:true});
+  }
+ }
+}
 app.get("/api/period-schedules",async(req,res)=>{
  try{
   const unitId=String(req.query.unitId||"");
   const specialty=String(req.query.specialty||"");
   const date=String(req.query.date||"");
   if(!unitId)return res.status(400).json({error:"Selecione a unidade."});
-  const where={healthUnitId:unitId,active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},startsAt:{gt:new Date()},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}},...(specialty?{specialty}:{})};
+  await materializeRecurringPeriods(unitId);\n  const where={healthUnitId:unitId,active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},startsAt:{gt:new Date()},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}},healthUnit:{is:{active:true}},...(specialty?{specialty}:{})};
   if(date)where.date=new Date(date+"T00:00:00.000Z");
   const schedules=await prisma.doctorPeriodSchedule.findMany({where,include:{doctor:{select:{id:true,name:true}},appointments:{where:{status:"SCHEDULED"},select:{id:true}}},orderBy:[{date:"asc"},{startsAt:"asc"},{doctor:{name:"asc"}}]});
   res.json({schedules:schedules.filter(x=>x.appointments.length<x.capacity).map(x=>({id:x.id,date:x.date,period:x.period,startsAt:x.startsAt,endsAt:x.endsAt,specialty:x.specialty,unitId:x.healthUnitId,unit:x.healthUnitId,doctor:x.doctor,capacity:x.capacity,remaining:x.capacity-x.appointments.length}))});
  }catch(e){res.status(500).json({error:"Não foi possível carregar os períodos disponíveis."})}
+});
+app.get("/api/admin/recurring-periods",auth(),roles("ADMIN"),async(req,res)=>{
+ const schedules=await prisma.doctorRecurringPeriod.findMany({include:{doctor:{select:{id:true,name:true}},healthUnit:{select:{id:true,name:true}}},orderBy:{createdAt:"desc"},take:100});
+ res.json({schedules});
+});
+app.patch("/api/admin/recurring-periods/:id",auth(),roles("ADMIN"),async(req,res)=>{
+ try{const {active}=z.object({active:z.boolean()}).parse(req.body);const rule=await prisma.doctorRecurringPeriod.update({where:{id:req.params.id},data:{active}});await log(req.user.id,active?"RECURRING_PERIOD_ACTIVATED":"RECURRING_PERIOD_DEACTIVATED","DoctorRecurringPeriod",rule.id);res.json({schedule:rule,message:active?"Repetição reativada.":"Repetição desativada. Os períodos já publicados e agendamentos existentes foram preservados."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar a repetição."})}
 });
 app.get("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
  const schedules=await prisma.doctorPeriodSchedule.findMany({include:{doctor:{select:{id:true,name:true}},healthUnit:{select:{id:true,name:true}},_count:{select:{appointments:true}}},orderBy:[{date:"desc"},{startsAt:"asc"}],take:150});
@@ -74,6 +98,22 @@ app.get("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
 });
 app.patch("/api/admin/period-schedules/:id",auth(),roles("ADMIN"),async(req,res)=>{
  try{const {active}=z.object({active:z.boolean()}).parse(req.body);const item=await prisma.doctorPeriodSchedule.update({where:{id:req.params.id},data:{active}});await log(req.user.id,active?"DOCTOR_PERIOD_ACTIVATED":"DOCTOR_PERIOD_DEACTIVATED","DoctorPeriodSchedule",item.id);res.json({schedule:item,message:active?"Período reativado.":"Período desativado para novas reservas."})}catch(e){res.status(e.code==="P2025"?404:400).json({error:"Não foi possível alterar o período."})}
+});
+app.post("/api/admin/recurring-periods",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),validFrom:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),validUntil:z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).optional().nullable(),weekdays:z.array(z.number().int().min(0).max(6)).min(1).max(7),period:periodSchema,startsAtTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),endsAtTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
+  const from=new Date(d.validFrom+"T00:00:00.000Z"),to=d.validUntil?new Date(d.validUntil+"T00:00:00.000Z"):null;
+  if(to&&to<from)return res.status(400).json({error:"A data final deve ser igual ou posterior à data inicial."});
+  if(d.endsAtTime<=d.startsAtTime)return res.status(400).json({error:"O fim do atendimento deve ser depois do início."});
+  if(from<new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z"))return res.status(400).json({error:"A repetição deve começar hoje ou em uma data futura."});
+  const [doctor,unit,assignment,specialtyAssignment]=await Promise.all([prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}}),prisma.doctorSpecialty.findFirst({where:{doctorId:d.doctorId,name:d.specialty}})]);
+  if(!doctor||!unit||!assignment)return res.status(409).json({error:"Confira se o médico está ativo, com 2FA e vinculado à unidade ativa."});
+  if(!specialtyAssignment)return res.status(409).json({error:"Esta especialidade não está cadastrada no perfil do médico."});
+  const rule=await prisma.doctorRecurringPeriod.create({data:{...d,weekdays:[...new Set(d.weekdays)],validFrom:from,validUntil:to}});
+  await materializeRecurringPeriods(unit.id);
+  await log(req.user.id,"DOCTOR_RECURRING_PERIOD_CREATED","DoctorRecurringPeriod",rule.id);
+  res.status(201).json({schedule:rule,message:"Repetição semanal cadastrada. Os próximos 30 dias serão disponibilizados automaticamente conforme os dias selecionados."});
+ }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível cadastrar a repetição semanal."})}
 });
 app.post("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
  try{
