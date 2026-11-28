@@ -44,27 +44,92 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  await log(req.user.id,"STAFF_2FA_ENABLED","User",staff.id);
  res.json({message:"Autenticação em duas etapas ativada."});
 });
-app.get("/api/staff/doctors",async(q,s)=>{const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null},healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}}}},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
 app.get("/api/staff/slots",async(req,res)=>{
  const doctorId=String(req.query.doctorId||"");
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
- const slots=await prisma.scheduleSlot.findMany({where:{doctorId,isOpen:true,startsAt:{gt:new Date()}},orderBy:{startsAt:"asc"},take:100,select:{id:true,startsAt:true,specialty:true,unit:true}});
+ const slots=await prisma.scheduleSlot.findMany({where:{doctorId,isOpen:true,startsAt:{gt:new Date()},healthUnitId:{not:null},healthUnit:{is:{active:true,doctors:{some:{doctorId}}}},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}},orderBy:{startsAt:"asc"},take:100,select:{id:true,startsAt:true,specialty:true,unit:true,healthUnitId:true}});
  res.json({slots});
 });
 app.post("/api/admin/slots",auth(),roles("ADMIN"),async(req,res)=>{
  try{
-  const d=z.object({doctorId:z.string().uuid(),startsAt:z.string().datetime(),specialty:z.string().min(2).max(80),unit:z.string().min(2).max(120)}).parse(req.body);
+  const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),startsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80)}).parse(req.body);
   if(new Date(d.startsAt)<=new Date())return res.status(400).json({error:"O horário precisa ser futuro."});
-  const doctor=await prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true}});
-  if(!doctor)return res.status(404).json({error:"Médico não encontrado."});
-  const slot=await prisma.scheduleSlot.create({data:{...d,startsAt:new Date(d.startsAt)}});
+  const [doctor,unit,assignment]=await Promise.all([
+   prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),
+   prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),
+   prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}})
+  ]);
+  if(!doctor)return res.status(404).json({error:"Médico não encontrado ou inativo."});
+  if(!unit)return res.status(404).json({error:"Unidade não encontrada ou ainda não está ativa."});
+  if(!assignment)return res.status(409).json({error:"Vincule este médico à unidade antes de publicar horários."});
+  const slot=await prisma.scheduleSlot.create({data:{doctorId:d.doctorId,healthUnitId:unit.id,startsAt:new Date(d.startsAt),specialty:d.specialty,unit:unit.name}});
   await log(req.user.id,"SCHEDULE_SLOT_CREATED","ScheduleSlot",slot.id);
   res.status(201).json({slot});
  }catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Este profissional já possui um horário cadastrado neste momento.":e.errors?.[0]?.message||"Não foi possível cadastrar o horário."})}
 });
+app.get("/api/admin/units",auth(),roles("ADMIN"),async(q,s)=>{
+ const units=await prisma.healthUnit.findMany({include:{doctors:{include:{doctor:{select:{id:true,name:true,active:true}}}}},orderBy:[{municipality:"asc"},{name:"asc"}]});
+ s.json({units:units.map(unit=>({...unit,doctors:unit.doctors.map(item=>item.doctor)}))});
+});
+app.post("/api/admin/units",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({name:z.string().trim().min(3).max(120),address:z.string().trim().min(5).max(240),phone:z.string().trim().max(30).optional().default(""),municipality:z.string().trim().min(2).max(120),coverageArea:z.string().trim().max(240).optional().default("")}).parse(req.body);
+  const unit=await prisma.healthUnit.create({data:{...d,active:false}});
+  await log(req.user.id,"HEALTH_UNIT_CREATED","HealthUnit",unit.id);
+  res.status(201).json({unit,message:"Unidade cadastrada como Em preparação. Ative-a somente após revisar os dados."});
+ }catch(e){res.status(e.code==="P2002"?409:400).json({error:e.code==="P2002"?"Já existe uma unidade com esse nome.":e.errors?.[0]?.message||"Não foi possível cadastrar a unidade."})}
+});
+app.patch("/api/admin/units/:id",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({name:z.string().trim().min(3).max(120).optional(),address:z.string().trim().min(5).max(240).optional(),phone:z.string().trim().max(30).optional(),municipality:z.string().trim().min(2).max(120).optional(),coverageArea:z.string().trim().max(240).optional(),active:z.boolean().optional()}).refine(v=>Object.keys(v).length>0).parse(req.body);
+  const unit=await prisma.$transaction(async tx=>{
+   const updated=await tx.healthUnit.update({where:{id:req.params.id},data:d});
+   if(d.active===false)await tx.scheduleSlot.updateMany({where:{healthUnitId:updated.id,isOpen:true,startsAt:{gt:new Date()}},data:{isOpen:false}});
+   return updated;
+  });
+  await log(req.user.id,d.active===undefined?"HEALTH_UNIT_UPDATED":d.active?"HEALTH_UNIT_ACTIVATED":"HEALTH_UNIT_DEACTIVATED","HealthUnit",unit.id);
+  res.json({unit});
+ }catch(e){res.status(e.code==="P2025"?404:e.code==="P2002"?409:400).json({error:e.code==="P2025"?"Unidade não encontrada.":e.code==="P2002"?"Já existe uma unidade com esse nome.":e.errors?.[0]?.message||"Não foi possível atualizar a unidade."})}
+});
+app.post("/api/admin/units/:id/doctors",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const {doctorId}=z.object({doctorId:z.string().uuid()}).parse(req.body);
+  const [unit,doctor]=await Promise.all([
+   prisma.healthUnit.findUnique({where:{id:req.params.id}}),
+   prisma.user.findFirst({where:{id:doctorId,role:"DOCTOR",active:true}})
+  ]);
+  if(!unit)return res.status(404).json({error:"Unidade não encontrada."});
+  if(!doctor)return res.status(404).json({error:"Médico não encontrado ou inativo."});
+  const assignment=await prisma.healthUnitDoctor.upsert({where:{healthUnitId_doctorId:{healthUnitId:unit.id,doctorId:doctor.id}},create:{healthUnitId:unit.id,doctorId:doctor.id},update:{}});
+  await log(req.user.id,"HEALTH_UNIT_DOCTOR_ASSIGNED","HealthUnitDoctor",assignment.id);
+  res.status(201).json({assignment,message:"Profissional vinculado à unidade."});
+ }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível vincular o profissional."})}
+});
+app.delete("/api/admin/units/:id/doctors/:doctorId",auth(),roles("ADMIN"),async(req,res)=>{
+ const result=await prisma.$transaction(async tx=>{const removed=await tx.healthUnitDoctor.deleteMany({where:{healthUnitId:req.params.id,doctorId:req.params.doctorId}});if(removed.count)await tx.scheduleSlot.updateMany({where:{healthUnitId:req.params.id,doctorId:req.params.doctorId,isOpen:true},data:{isOpen:false}});return removed;});
+ if(!result.count)return res.status(404).json({error:"Vínculo não encontrado."});
+ await log(req.user.id,"HEALTH_UNIT_DOCTOR_UNASSIGNED","HealthUnitDoctor",req.params.id+":"+req.params.doctorId);
+ res.json({message:"Vínculo removido."});
+});
 app.get("/api/admin/staff",auth(),roles("ADMIN"),async(q,s)=>{
  const staff=await prisma.user.findMany({where:{role:{in:["DOCTOR","NURSE","ADMIN"]}},select:{id:true,name:true,email:true,role:true,active:true,twoFactorOn:true},orderBy:{name:"asc"}});
  s.json({staff});
+});
+app.patch("/api/admin/staff/:id/status",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const {active}=z.object({active:z.boolean()}).parse(req.body);
+  const staff=await prisma.user.findUnique({where:{id:req.params.id}});
+  if(!staff||!["DOCTOR","NURSE"].includes(staff.role))return res.status(404).json({error:"Profissional não encontrado."});
+  if(staff.id===req.user.id)return res.status(400).json({error:"Não é permitido desativar a própria conta por esta função."});
+  await prisma.$transaction(async tx=>{
+   await tx.user.update({where:{id:staff.id},data:{active}});
+   if(!active&&staff.role==="DOCTOR")await tx.scheduleSlot.updateMany({where:{doctorId:staff.id,isOpen:true,startsAt:{gt:new Date()}},data:{isOpen:false}});
+  });
+  await log(req.user.id,active?"STAFF_REACTIVATED":"STAFF_DEACTIVATED","User",staff.id);
+  res.json({message:active?"Profissional reativado. Revise e publique novos horários quando estiver pronto.":"Profissional desativado. Novos agendamentos foram bloqueados; consultas existentes e histórico foram preservados."});
+ }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível alterar a situação do profissional."})}
 });
 app.post("/api/admin/staff",auth(),roles("ADMIN"),async(req,res)=>{
  try{

@@ -18,6 +18,10 @@
                     data-lucide="heart-pulse"></i></span><span>Saúde <b>Perto</b><small>Portal do
                     cidadão</small></span></a>
         <nav class="desktop-nav" aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#vacinas">Vacinação</a><a href="#informacoes">Sobre o portal</a><a href="#servicos">Agendamentos</a></nav>
+        <button class="unit-control" id="unit-open" type="button" aria-haspopup="dialog" aria-controls="unit-dialog">
+            <i data-lucide="map-pin"></i><span><small>Minha unidade</small><b id="unit-label">Selecionar unidade</b></span>
+            <i data-lucide="chevron-down"></i>
+        </button>
         <div class="top-actions">
             <button class="text-button" id="font-toggle" type="button">A+ Texto</button>
             <button class="button button-outline" id="login-open" type="button">Entrar</button>
@@ -176,17 +180,29 @@
             <p class="dialog-switch">Já possui cadastro? <button type="button" class="inline-link" id="login-from-register">Entrar na minha conta</button></p>
         </form>
     </dialog>
+    <dialog id="unit-dialog" aria-labelledby="unit-title">
+        <form id="unit-form">
+            <button class="dialog-close" type="button" data-close aria-label="Fechar">×</button>
+            <span class="eyebrow">Unidade de referência</span><h2 id="unit-title">Escolha sua unidade</h2>
+            <p class="muted">Selecione uma unidade com agenda disponível no portal.</p>
+            <button class="button button-outline full" id="unit-geolocation" type="button"><i data-lucide="map-pin"></i> Usar minha localização</button>
+            <p class="location-note" id="unit-location-status" role="status">A localização só será consultada se você autorizar. Ela não será enviada nem armazenada.</p>
+            <label for="unit-select">Unidade de saúde</label><select id="unit-select" required><option value="">Carregando unidades...</option></select>
+            <p class="location-note">Ainda não há mapa oficial de unidades e áreas de abrangência. Por isso, a localização não escolhe automaticamente um posto.</p>
+            <button class="button button-primary full" type="submit">Salvar unidade</button>
+        </form>
+    </dialog>
     <dialog id="schedule-dialog" aria-labelledby="schedule-title">
-        <form id="schedule-form"><button class="dialog-close" type="button" data-close
-                aria-label="Fechar">×</button><span class="eyebrow">Novo atendimento</span>
-            <h2 id="schedule-title">Agendar consulta</h2><label for="doctor">Profissional</label><select id="doctor"
-                required>
-                <option value="">Selecione</option>
-            </select><label for="slot">Horário disponível</label><select id="slot" required>
-                <option value="">Selecione primeiro o profissional</option>
-            </select>
-            <p id="schedule-error" class="form-error" role="alert"></p><button class="button button-primary full"
-                type="submit">Confirmar solicitação</button>
+        <form id="schedule-form"><button class="dialog-close" type="button" data-close aria-label="Fechar">×</button>
+            <span class="eyebrow">Novo atendimento</span><h2 id="schedule-title">Agendar consulta</h2>
+            <p class="muted">Escolha a unidade e veja os horários cadastrados pela equipe.</p>
+            <label for="schedule-unit">Unidade de saúde</label><select id="schedule-unit" required><option value="">Selecione</option></select>
+            <label for="schedule-specialty">Especialidade</label><select id="schedule-specialty" required disabled><option value="">Selecione primeiro a unidade</option></select>
+            <label for="doctor">Profissional</label><select id="doctor" required disabled><option value="">Selecione primeiro a especialidade</option></select>
+            <label for="schedule-period">Período de preferência</label><select id="schedule-period"><option value="any">Qualquer período</option><option value="morning">Manhã</option><option value="afternoon">Tarde</option></select>
+            <label for="slot">Escolha o horário da consulta</label><select id="slot" required><option value="">Selecione primeiro o profissional</option></select>
+            <p class="location-note">Os horários exibidos correspondem ao período escolhido. Selecione um para confirmar sua consulta.</p>
+            <p id="schedule-error" class="form-error" role="alert"></p><button class="button button-primary full" type="submit">Confirmar solicitação</button>
         </form>
     </dialog>
     <dialog id="appointments-dialog" aria-labelledby="appointments-title">

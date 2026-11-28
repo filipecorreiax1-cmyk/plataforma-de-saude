@@ -1,5 +1,7 @@
 const $ = (selector) => document.querySelector(selector);
 let currentUser = null;
+let selectedUnit = "";
+let scheduleSlots = [];
 
 function setAuthenticatedUser(user) {
   currentUser = user || null;
@@ -168,13 +170,32 @@ $("#register-open").addEventListener("click", () => {
   openDialog("#register-dialog");
 });
 
-async function startSchedule() {
+let scheduleOpening = false;
+
+async function startSchedule(event) {
+  if (scheduleOpening) return;
+  scheduleOpening = true;
+  const restoreButton = beginButtonLoading(event.currentTarget, "Preparando...");
   try {
-    await api("/api/auth/me");
-    await loadDoctors();
-    openDialog("#schedule-dialog");
-  } catch {
-    openDialog("#auth-dialog");
+    try {
+      await api("/api/auth/me");
+    } catch {
+      openDialog("#auth-dialog");
+      return;
+    }
+    restoreButton();
+    const restoreSearchButton = beginButtonLoading(event.currentTarget, "Buscando horários...");
+    try {
+      await loadScheduleData();
+      openDialog("#schedule-dialog");
+    } finally {
+      restoreSearchButton();
+    }
+  } catch (error) {
+    toast("Não foi possível carregar os horários. " + error.message);
+  } finally {
+    restoreButton();
+    scheduleOpening = false;
   }
 }
 
@@ -257,38 +278,98 @@ $("#reg-cpf").addEventListener("input", (event) => {
   event.target.value = value;
 });
 
-async function loadDoctors() {
-  const result = await api("/api/staff/doctors");
-  $("#doctor").innerHTML = '<option value="">Selecione</option>' +
-    result.doctors.map((doctor) =>
-      '<option value="' + doctor.id + '">' + escapeHtml(doctor.name) + "</option>"
-    ).join("");
-  $("#slot").innerHTML = '<option value="">Selecione o profissional</option>';
-}
-
-$("#doctor").addEventListener("change", loadSlots);
-
-async function loadSlots() {
-  const doctorId = $("#doctor").value;
-  $("#slot").innerHTML = '<option value="">Carregando horários...</option>';
-  if (!doctorId) {
-    $("#slot").innerHTML = '<option value="">Selecione o profissional</option>';
-    return;
-  }
-  try {
-    const result = await api("/api/staff/slots?doctorId=" + encodeURIComponent(doctorId));
-    $("#slot").innerHTML = result.slots.length
-      ? '<option value="">Selecione o horário</option>' + result.slots.map((slot) =>
-        '<option value="' + slot.id + '">' +
-        new Date(slot.startsAt).toLocaleString("pt-BR") + " · " +
-        escapeHtml(slot.specialty) + " · " + escapeHtml(slot.unit) + "</option>"
-      ).join("")
-      : '<option value="">Nenhum horário disponível</option>';
-  } catch (error) {
-    $("#slot").innerHTML = '<option value="">Não foi possível carregar</option>';
-    $("#schedule-error").textContent = error.message;
+async function loadScheduleData() {
+  $("#schedule-error").textContent = "";
+  $("#schedule-unit").innerHTML = '<option value="">Carregando unidades...</option>';
+  $("#unit-select").innerHTML = '<option value="">Carregando unidades...</option>';
+  const [unitsResult, doctorsResult] = await Promise.all([api("/api/units"), api("/api/staff/doctors")]);
+  const groups = await Promise.all(doctorsResult.doctors.map(async doctor => {
+    const result = await api("/api/staff/slots?doctorId=" + encodeURIComponent(doctor.id));
+    return result.slots.map(slot => ({...slot, doctorId:doctor.id, doctorName:doctor.name}));
+  }));
+  scheduleSlots = groups.flat();
+  const units = unitsResult.units;
+  const options = units.length
+    ? '<option value="">Selecione uma unidade</option>' + units.map(unit=>'<option value="'+unit.id+'">'+escapeHtml(unit.name+' — '+unit.municipality)+'</option>').join("")
+    : '<option value="">Nenhuma unidade com horário disponível</option>';
+  $("#schedule-unit").innerHTML = options;
+  $("#unit-select").innerHTML = options;
+  if (selectedUnit && units.some(unit=>unit.id===selectedUnit)) {
+    $("#schedule-unit").value = selectedUnit;
+    $("#unit-select").value = selectedUnit;
+    updateSpecialties();
+  } else {
+    selectedUnit = "";
+    $("#schedule-specialty").innerHTML = '<option value="">Selecione primeiro a unidade</option>';
+    $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
+    $("#schedule-specialty").disabled = true;
+    $("#doctor").disabled = true;
+    $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
   }
 }
+
+function updateSpecialties() {
+  const unitId = $("#schedule-unit").value;
+  const values = [...new Set(scheduleSlots.filter(slot=>slot.healthUnitId===unitId).map(slot=>slot.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  $("#schedule-specialty").innerHTML = values.length
+    ? '<option value="">Selecione uma especialidade</option>' + values.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")
+    : '<option value="">Nenhuma especialidade disponível</option>';
+  $("#schedule-specialty").disabled = !values.length;
+  $("#doctor").disabled = true;
+  $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
+  $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+}
+
+function updateDoctors() {
+  const unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value;
+  const doctors=new Map();
+  scheduleSlots.filter(slot=>slot.healthUnitId===unitId&&slot.specialty===specialty).forEach(slot=>doctors.set(slot.doctorId,slot.doctorName));
+  $("#doctor").innerHTML = doctors.size
+    ? '<option value="">Selecione um profissional</option>' + [...doctors].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join("")
+    : '<option value="">Nenhum profissional com horário disponível</option>';
+  $("#doctor").disabled = !doctors.size;
+  $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+}
+
+$("#schedule-unit").addEventListener("change",updateSpecialties);
+$("#schedule-specialty").addEventListener("change",updateDoctors);
+$("#doctor").addEventListener("change",loadSlots);
+$("#schedule-period").addEventListener("change",loadSlots);
+
+function loadSlots() {
+  const doctorId=$("#doctor").value, unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value, period=$("#schedule-period").value;
+  if (!doctorId) { $("#slot").innerHTML='<option value="">Selecione o profissional</option>'; return; }
+  const rows=scheduleSlots.filter(slot=>{
+    if(slot.doctorId!==doctorId||slot.healthUnitId!==unitId||slot.specialty!==specialty)return false;
+    const hour=new Date(slot.startsAt).getHours();
+    return period==="morning"?hour<12:period==="afternoon"?hour>=12:true;
+  }).sort((a,b)=>new Date(a.startsAt)-new Date(b.startsAt));
+  $("#slot").innerHTML=rows.length
+    ? '<option value="">Selecione o horário disponível</option>'+rows.map(slot=>'<option value="'+slot.id+'">'+new Date(slot.startsAt).toLocaleString("pt-BR")+'</option>').join("")
+    : '<option value="">Nenhum horário neste período</option>';
+}
+
+$("#unit-open").addEventListener("click",async()=>{
+  try { await loadScheduleData(); openDialog("#unit-dialog"); }
+  catch(error) { toast(error.message); }
+});
+$("#unit-form").addEventListener("submit",event=>{
+  event.preventDefault();
+  if(!$("#unit-select").value)return;
+  selectedUnit=$("#unit-select").value;
+  $("#unit-label").textContent=$("#unit-select").selectedOptions[0]?.textContent||"Unidade selecionada";
+  $("#unit-dialog").close();
+});
+$("#unit-geolocation").addEventListener("click",()=>{
+  const button=$("#unit-geolocation"),status=$("#unit-location-status");
+  if(!navigator.geolocation){status.textContent="Este navegador não oferece localização. Escolha a unidade manualmente.";return;}
+  button.disabled=true;status.textContent="Aguardando sua autorização no navegador...";
+  navigator.geolocation.getCurrentPosition(
+    ()=>{status.textContent="Localização autorizada. Ainda não existe mapa oficial de unidades e áreas de abrangência; escolha a unidade na lista. Sua coordenada não será enviada nem armazenada.";button.disabled=false;},
+    error=>{status.textContent=error.code===1?"Permissão não concedida. Você pode escolher a unidade manualmente.":"Não foi possível obter a localização. Escolha a unidade manualmente.";button.disabled=false;},
+    {enableHighAccuracy:false,timeout:10000,maximumAge:60000}
+  );
+});
 
 $("#schedule-form").addEventListener("submit", async (event) => {
   event.preventDefault();
