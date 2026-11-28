@@ -342,7 +342,10 @@ async function loadScheduleData() {
     $("#period-schedule").innerHTML='<option value="">Selecione os dados acima</option>';
   }
   const dateInput=$("#schedule-date");
-  if(!dateInput.value){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());dateInput.min=d.toISOString().slice(0,10);dateInput.value=dateInput.min;}
+  const localToday=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const nextDate=new Date(localToday+"T00:00:00.000Z");nextDate.setUTCDate(nextDate.getUTCDate()+1);
+  dateInput.min=localToday;dateInput.max=nextDate.toISOString().slice(0,10);
+  if(!dateInput.value||dateInput.value<dateInput.min||dateInput.value>dateInput.max)dateInput.value=localToday;
 }
 let availablePeriods=[];
 async function fetchPeriods(){
