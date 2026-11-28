@@ -6,7 +6,7 @@ if (!SECRET || SECRET.length < 32) {
 }
 app.disable("x-powered-by");app.set("trust proxy",1);
 app.use((req,res,next)=>{if(process.env.NODE_ENV==="production"&&req.get("x-forwarded-proto")!=="https")return res.redirect(308,"https://"+req.get("host")+req.originalUrl);next()});
-app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],connectSrc:["'self'"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"6mb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));
+app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'","https://unpkg.com"],styleSrc:["'self'","'unsafe-inline'","https://unpkg.com"],imgSrc:["'self'","data:","https://*.tile.openstreetmap.org"],connectSrc:["'self'","https://nominatim.openstreetmap.org"],fontSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));app.use(express.json({limit:"6mb"}));app.use(cookieParser());app.use(rateLimit({windowMs:900000,limit:120,standardHeaders:"draft-8",legacyHeaders:false}));
 const loginLimiter=rateLimit({windowMs:900000,limit:8,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de login. Aguarde 15 minutos."}});
 const registerLimiter=rateLimit({windowMs:3600000,limit:5,standardHeaders:"draft-8",legacyHeaders:false,message:{error:"Muitas tentativas de cadastro. Tente novamente mais tarde."}});app.use(express.static(path.join(__dirname,"../../public")));
 app.get("/", (req, res) => {
