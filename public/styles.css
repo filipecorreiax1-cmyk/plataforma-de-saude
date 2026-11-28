@@ -871,3 +871,7 @@ input:focus, select:focus, .staff-form textarea:focus {
 .weekday-picker legend{font-weight:700;padding:0 6px}
 .weekday-picker label,.form-check-row{display:flex;align-items:center;gap:8px}
 .weekday-picker input,.form-check-row input{width:auto;min-height:auto}
+
+
+/* Segurança visual por perfil: não permitir que layouts com display sobrescrevam o atributo hidden. */
+#admin-area[hidden], #doctor-area[hidden], #vaccine-area[hidden] { display: none !important; }
