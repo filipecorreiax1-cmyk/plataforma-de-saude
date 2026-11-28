@@ -40,6 +40,9 @@ model User {
   auditEvents     AuditEvent[]
   availableSlots  ScheduleSlot[]
   healthUnitAssignments HealthUnitDoctor[]
+  doctorPeriodSchedules DoctorPeriodSchedule[]
+  recurringPeriodSchedules DoctorRecurringPeriod[]
+  doctorSpecialties DoctorSpecialty[]
 }
 
 model Appointment {
@@ -52,11 +55,14 @@ model Appointment {
   status      AppointmentStatus @default(SCHEDULED)
   createdAt   DateTime          @default(now())
   cancelledAt DateTime?
+  periodScheduleId String?
+  periodSchedule DoctorPeriodSchedule? @relation(fields: [periodScheduleId], references: [id], onDelete: SetNull)
   slotId      String?       @unique
   slot        ScheduleSlot? @relation(fields: [slotId], references: [id])
   patient     User              @relation("PatientAppointments", fields: [patientId], references: [id])
   doctor      User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
-  @@unique([doctorId, startsAt])
+  @@index([doctorId, startsAt])
+  @@index([periodScheduleId, status])
   @@index([patientId, startsAt])
 }
 
@@ -67,6 +73,7 @@ model Vaccine {
   targetGroup String
   doses       String
   active      Boolean  @default(true)
+  imageData   String?  @db.Text
   updatedAt   DateTime @updatedAt
 }
 
@@ -77,7 +84,16 @@ model ImmunizationEvent {
   startsAt    DateTime
   endsAt      DateTime?
   unit        String
+  imageData   String?  @db.Text
+  active      Boolean  @default(true)
+  archivedAt  DateTime?
+  parentCampaignId String?
+  parentCampaign ImmunizationEvent? @relation("CampaignEditions", fields: [parentCampaignId], references: [id], onDelete: SetNull)
+  editions    ImmunizationEvent[] @relation("CampaignEditions")
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([startsAt, endsAt, active])
+  @@index([parentCampaignId])
 }
 
 model AuditEvent {
@@ -90,6 +106,7 @@ model AuditEvent {
   actor     User?    @relation(fields: [actorId], references: [id])
   @@index([actorId, createdAt])
 }
+
 model ScheduleSlot {
   id        String       @id @default(uuid())
   doctorId  String
@@ -107,7 +124,6 @@ model ScheduleSlot {
   @@index([healthUnitId, startsAt, isOpen])
 }
 
-
 model HealthUnit {
   id           String   @id @default(uuid())
   name         String
@@ -115,11 +131,15 @@ model HealthUnit {
   phone        String?
   municipality String
   coverageArea String?
+  latitude     Float?
+  longitude    Float?
   active       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   doctors      HealthUnitDoctor[]
   scheduleSlots ScheduleSlot[]
+  periodSchedules DoctorPeriodSchedule[]
+  recurringPeriodSchedules DoctorRecurringPeriod[]
   @@unique([name, municipality])
   @@index([municipality, active])
 }
@@ -133,4 +153,62 @@ model HealthUnitDoctor {
   doctor      User       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   @@unique([healthUnitId, doctorId])
   @@index([doctorId])
+}
+
+model DoctorPeriodSchedule {
+  id          String   @id @default(uuid())
+  doctorId    String
+  healthUnitId String
+  date        DateTime @db.Date
+  period      String
+  startsAt    DateTime
+  endsAt      DateTime
+  specialty   String
+  capacity    Int
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  doctor      User       @relation(fields: [doctorId], references: [id])
+  healthUnit  HealthUnit @relation(fields: [healthUnitId], references: [id])
+  appointments Appointment[]
+  recurringPeriodId String?
+  recurringPeriod DoctorRecurringPeriod? @relation(fields: [recurringPeriodId], references: [id], onDelete: SetNull)
+  @@unique([doctorId, healthUnitId, date, period])
+  @@index([healthUnitId, date, period, active])
+  @@index([doctorId, date, active])
+}
+
+
+model DoctorSpecialty {
+  id        String   @id @default(uuid())
+  doctorId  String
+  name      String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  doctor    User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  @@unique([doctorId, name])
+  @@index([name])
+}
+
+
+model DoctorRecurringPeriod {
+  id          String   @id @default(uuid())
+  doctorId    String
+  healthUnitId String
+  weekdays    Int[]
+  validFrom   DateTime @db.Date
+  validUntil  DateTime? @db.Date
+  period      String
+  startsAtTime String
+  endsAtTime   String
+  specialty   String
+  capacity    Int
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  doctor      User       @relation(fields: [doctorId], references: [id])
+  healthUnit  HealthUnit @relation(fields: [healthUnitId], references: [id])
+  generatedSchedules DoctorPeriodSchedule[]
+  @@index([healthUnitId, active, validFrom])
+  @@index([doctorId, active])
 }

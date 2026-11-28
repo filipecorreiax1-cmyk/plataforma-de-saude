@@ -1,6 +1,20 @@
 const $ = (selector) => document.querySelector(selector);
 let currentUser = null;
-let selectedUnit = "";
+const SELECTED_UNIT_STORAGE_KEY = "saude-perto:selected-unit";
+let selectedUnit = (() => {
+  try { return localStorage.getItem(SELECTED_UNIT_STORAGE_KEY) || ""; }
+  catch { return ""; }
+})();
+
+function saveSelectedUnit(unitId) {
+  selectedUnit = unitId || "";
+  try {
+    if (selectedUnit) localStorage.setItem(SELECTED_UNIT_STORAGE_KEY, selectedUnit);
+    else localStorage.removeItem(SELECTED_UNIT_STORAGE_KEY);
+  } catch {
+    // A seleção continua válida nesta página mesmo se o navegador bloquear o armazenamento.
+  }
+}
 let scheduleSlots = [];
 
 function setAuthenticatedUser(user) {
@@ -41,15 +55,44 @@ async function restoreSession() {
   }
 }
 
+let operationCount=0,operationHideTimer=null;
+function showOperationStatus(message,state="loading"){
+ let node=document.querySelector("#operation-status");
+ if(!node){node=document.createElement("div");node.id="operation-status";node.className="operation-status";node.setAttribute("role","status");node.setAttribute("aria-live","polite");document.body.appendChild(node)}
+ node.className="operation-status is-visible "+(state==="loading"?"is-loading":state==="error"?"is-error":"is-success");
+ node.innerHTML=state==="loading"?'<span class="operation-spinner" aria-hidden="true"></span><span>'+message+'</span>':'<span aria-hidden="true">'+(state==="error"?"!":"✓")+'</span><span>'+message+'</span>';
+}
+function startOperation(method){
+ operationCount++;if(operationHideTimer)clearTimeout(operationHideTimer);
+ const label=method==="POST"?"Criando / salvando...":method==="PATCH"?"Alterando...":method==="DELETE"?"Removendo...":"Processando...";
+ showOperationStatus(label,"loading");
+}
+function finishOperation(error){
+ operationCount=Math.max(0,operationCount-1);
+ if(operationCount>0)return;
+ showOperationStatus(error?"Não foi possível concluir. Confira a mensagem na tela.":"Concluído com sucesso.",error?"error":"success");
+ operationHideTimer=setTimeout(()=>{if(operationCount===0){const node=document.querySelector("#operation-status");node?.classList.remove("is-visible")}},1800);
+}
+
 async function api(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Não foi possível concluir a solicitação.");
-  return data;
+  const method = (options.method || "GET").toUpperCase();
+  const mutating = ["POST", "PATCH", "PUT", "DELETE"].includes(method);
+  const trackOperation = mutating && !String(url).startsWith("/api/auth/");
+  if (trackOperation) startOperation(method);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Não foi possível concluir a solicitação.");
+    if (trackOperation) finishOperation(false);
+    return data;
+  } catch (error) {
+    if (trackOperation) finishOperation(true);
+    throw error;
+  }
 }
 
 function toast(message) {
@@ -279,76 +322,72 @@ $("#reg-cpf").addEventListener("input", (event) => {
 });
 
 async function loadScheduleData() {
-  $("#schedule-error").textContent = "";
-  $("#schedule-unit").innerHTML = '<option value="">Carregando unidades...</option>';
-  $("#unit-select").innerHTML = '<option value="">Carregando unidades...</option>';
-  const [unitsResult, doctorsResult] = await Promise.all([api("/api/units"), api("/api/staff/doctors")]);
-  const groups = await Promise.all(doctorsResult.doctors.map(async doctor => {
-    const result = await api("/api/staff/slots?doctorId=" + encodeURIComponent(doctor.id));
-    return result.slots.map(slot => ({...slot, doctorId:doctor.id, doctorName:doctor.name}));
-  }));
-  scheduleSlots = groups.flat();
-  const units = unitsResult.units;
-  const options = units.length
-    ? '<option value="">Selecione uma unidade</option>' + units.map(unit=>'<option value="'+unit.id+'">'+escapeHtml(unit.name+' — '+unit.municipality)+'</option>').join("")
-    : '<option value="">Nenhuma unidade com horário disponível</option>';
-  $("#schedule-unit").innerHTML = options;
-  $("#unit-select").innerHTML = options;
-  if (selectedUnit && units.some(unit=>unit.id===selectedUnit)) {
-    $("#schedule-unit").value = selectedUnit;
-    $("#unit-select").value = selectedUnit;
-    updateSpecialties();
-  } else {
-    selectedUnit = "";
-    $("#schedule-specialty").innerHTML = '<option value="">Selecione primeiro a unidade</option>';
-    $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
-    $("#schedule-specialty").disabled = true;
-    $("#doctor").disabled = true;
-    $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+  $("#schedule-error").textContent="";
+  $("#schedule-unit").innerHTML='<option value="">Carregando unidades...</option>';
+  $("#unit-select").innerHTML='<option value="">Carregando unidades...</option>';
+  const {units}=await api("/api/units");
+  window.healthUnits=units;
+  const options=units.length?'<option value="">Selecione uma unidade</option>'+units.map(u=>'<option value="'+u.id+'">'+escapeHtml(u.name+" — "+u.municipality)+'</option>').join(""):'<option value="">Nenhuma unidade com agenda disponível</option>';
+  $("#schedule-unit").innerHTML=options;
+  $("#unit-select").innerHTML=options;
+  if(selectedUnit&&units.some(u=>u.id===selectedUnit)){
+    $("#schedule-unit").value=selectedUnit;$("#unit-select").value=selectedUnit;
+    $("#unit-label").textContent=$("#unit-select").selectedOptions[0]?.textContent||"Unidade selecionada";
+    await updateSpecialties();
+  }else{
+    saveSelectedUnit("");
+    $("#schedule-specialty").innerHTML='<option value="">Selecione primeiro a unidade</option>';
+    $("#doctor").innerHTML='<option value="">Selecione primeiro a especialidade</option>';
+    $("#schedule-specialty").disabled=true;$("#doctor").disabled=true;
+    $("#period-schedule").innerHTML='<option value="">Selecione os dados acima</option>';
   }
+  const dateInput=$("#schedule-date");
+  const localToday=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const nextDate=new Date(localToday+"T00:00:00.000Z");nextDate.setUTCDate(nextDate.getUTCDate()+1);
+  dateInput.min=localToday;dateInput.max=nextDate.toISOString().slice(0,10);
+  if(!dateInput.value||dateInput.value<dateInput.min||dateInput.value>dateInput.max)dateInput.value=localToday;
 }
-
-function updateSpecialties() {
-  const unitId = $("#schedule-unit").value;
-  const values = [...new Set(scheduleSlots.filter(slot=>slot.healthUnitId===unitId).map(slot=>slot.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
-  $("#schedule-specialty").innerHTML = values.length
-    ? '<option value="">Selecione uma especialidade</option>' + values.map(value=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join("")
-    : '<option value="">Nenhuma especialidade disponível</option>';
-  $("#schedule-specialty").disabled = !values.length;
-  $("#doctor").disabled = true;
-  $("#doctor").innerHTML = '<option value="">Selecione primeiro a especialidade</option>';
-  $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+let availablePeriods=[];
+async function fetchPeriods(){
+ const unitId=$("#schedule-unit").value,date=$("#schedule-date").value;
+ if(!unitId)return [];
+ const query=new URLSearchParams({unitId});
+ if(date)query.set("date",date);
+ const result=await api("/api/period-schedules?"+query.toString());
+ return result.schedules;
 }
-
-function updateDoctors() {
-  const unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value;
-  const doctors=new Map();
-  scheduleSlots.filter(slot=>slot.healthUnitId===unitId&&slot.specialty===specialty).forEach(slot=>doctors.set(slot.doctorId,slot.doctorName));
-  $("#doctor").innerHTML = doctors.size
-    ? '<option value="">Selecione um profissional</option>' + [...doctors].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join("")
-    : '<option value="">Nenhum profissional com horário disponível</option>';
-  $("#doctor").disabled = !doctors.size;
-  $("#slot").innerHTML = '<option value="">Selecione primeiro o profissional</option>';
+async function updateSpecialties(){
+ const unitId=$("#schedule-unit").value;
+ if(!unitId){$("#schedule-specialty").disabled=true;return;}
+ try{
+  availablePeriods=await fetchPeriods();
+  const values=[...new Set(availablePeriods.map(x=>x.specialty))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  $("#schedule-specialty").innerHTML=values.length?'<option value="">Selecione uma especialidade</option>'+values.map(v=>'<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>').join(""):'<option value="">Nenhuma especialidade nesta data</option>';
+  $("#schedule-specialty").disabled=!values.length;
+  $("#doctor").disabled=true;$("#doctor").innerHTML='<option value="">Selecione primeiro a especialidade</option>';
+  $("#period-schedule").innerHTML='<option value="">Selecione primeiro o profissional</option>';
+ }catch(e){$("#schedule-error").textContent=e.message;}
 }
-
-$("#schedule-unit").addEventListener("change",updateSpecialties);
+async function updateDoctors(){
+ const specialty=$("#schedule-specialty").value;
+ const doctors=new Map(availablePeriods.filter(x=>x.specialty===specialty).map(x=>[x.doctor.id,x.doctor.name]));
+ $("#doctor").innerHTML=doctors.size?'<option value="">Selecione um profissional</option>'+[...doctors].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([id,n])=>'<option value="'+id+'">'+escapeHtml(n)+'</option>').join(""):'<option value="">Nenhum médico disponível</option>';
+ $("#doctor").disabled=!doctors.size;
+ await loadPeriodOptions();
+}
+async function loadPeriodOptions(){
+ const doctorId=$("#doctor").value,specialty=$("#schedule-specialty").value,period=$("#schedule-period").value;
+ const rows=availablePeriods.filter(x=>x.doctor.id===doctorId&&x.specialty===specialty&&x.period===period);
+ $("#period-schedule").innerHTML=rows.length?'<option value="">Selecione o período</option>'+rows.map(x=>'<option value="'+x.id+'">'+new Date(x.startsAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+' às '+new Date(x.endsAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+' · '+x.remaining+' vaga(s)</option>').join(""):'<option value="">Sem disponibilidade neste período</option>';
+}
+$("#schedule-unit").addEventListener("change",() => {
+  if ($("#schedule-unit").value) saveSelectedUnit($("#schedule-unit").value);
+  updateSpecialties();
+});
 $("#schedule-specialty").addEventListener("change",updateDoctors);
-$("#doctor").addEventListener("change",loadSlots);
-$("#schedule-period").addEventListener("change",loadSlots);
-
-function loadSlots() {
-  const doctorId=$("#doctor").value, unitId=$("#schedule-unit").value, specialty=$("#schedule-specialty").value, period=$("#schedule-period").value;
-  if (!doctorId) { $("#slot").innerHTML='<option value="">Selecione o profissional</option>'; return; }
-  const rows=scheduleSlots.filter(slot=>{
-    if(slot.doctorId!==doctorId||slot.healthUnitId!==unitId||slot.specialty!==specialty)return false;
-    const hour=new Date(slot.startsAt).getHours();
-    return period==="morning"?hour<12:period==="afternoon"?hour>=12:true;
-  }).sort((a,b)=>new Date(a.startsAt)-new Date(b.startsAt));
-  $("#slot").innerHTML=rows.length
-    ? '<option value="">Selecione o horário disponível</option>'+rows.map(slot=>'<option value="'+slot.id+'">'+new Date(slot.startsAt).toLocaleString("pt-BR")+'</option>').join("")
-    : '<option value="">Nenhum horário neste período</option>';
-}
-
+$("#doctor").addEventListener("change",loadPeriodOptions);
+$("#schedule-period").addEventListener("change",loadPeriodOptions);
+$("#schedule-date").addEventListener("change",async()=>{await updateSpecialties();});
 $("#unit-open").addEventListener("click",async()=>{
   try { await loadScheduleData(); openDialog("#unit-dialog"); }
   catch(error) { toast(error.message); }
@@ -356,7 +395,7 @@ $("#unit-open").addEventListener("click",async()=>{
 $("#unit-form").addEventListener("submit",event=>{
   event.preventDefault();
   if(!$("#unit-select").value)return;
-  selectedUnit=$("#unit-select").value;
+  saveSelectedUnit($("#unit-select").value);
   $("#unit-label").textContent=$("#unit-select").selectedOptions[0]?.textContent||"Unidade selecionada";
   $("#unit-dialog").close();
 });
@@ -365,7 +404,7 @@ $("#unit-geolocation").addEventListener("click",()=>{
   if(!navigator.geolocation){status.textContent="Este navegador não oferece localização. Escolha a unidade manualmente.";return;}
   button.disabled=true;status.textContent="Aguardando sua autorização no navegador...";
   navigator.geolocation.getCurrentPosition(
-    ()=>{status.textContent="Localização autorizada. Ainda não existe mapa oficial de unidades e áreas de abrangência; escolha a unidade na lista. Sua coordenada não será enviada nem armazenada.";button.disabled=false;},
+    pos=>{const latitude=pos.coords.latitude,longitude=pos.coords.longitude;const rad=v=>v*Math.PI/180;const distance=u=>{if(u.latitude==null||u.longitude==null)return Infinity;const dLat=rad(u.latitude-latitude),dLon=rad(u.longitude-longitude),a=Math.sin(dLat/2)**2+Math.cos(rad(latitude))*Math.cos(rad(u.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.asin(Math.sqrt(a));};const units=[...(window.healthUnits||[])].sort((a,b)=>distance(a)-distance(b));const options=units.map(u=>{const km=distance(u),label=u.name+" — "+u.municipality+(Number.isFinite(km)?" · "+(km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km"):" · distância indisponível");return '<option value="'+u.id+'">'+escapeHtml(label)+'</option>'}).join("");$("#unit-select").innerHTML='<option value="">Selecione uma unidade</option>'+options;$("#schedule-unit").innerHTML='<option value="">Selecione uma unidade</option>'+options;const nearest=units.find(u=>Number.isFinite(distance(u)));if(nearest){saveSelectedUnit(nearest.id);$("#unit-select").value=nearest.id;$("#schedule-unit").value=nearest.id;$("#unit-label").textContent=nearest.name+" — "+nearest.municipality;status.textContent="Unidades ordenadas pela distância. A mais próxima foi selecionada; você pode escolher outra.";updateSpecialties();}else{status.textContent="Localização obtida, mas as unidades ainda não têm coordenadas cadastradas. Escolha manualmente ou peça ao ADM para atualizar os locais.";}button.disabled=false;},
     error=>{status.textContent=error.code===1?"Permissão não concedida. Você pode escolher a unidade manualmente.":"Não foi possível obter a localização. Escolha a unidade manualmente.";button.disabled=false;},
     {enableHighAccuracy:false,timeout:10000,maximumAge:60000}
   );
@@ -381,7 +420,7 @@ $("#schedule-form").addEventListener("submit", async (event) => {
   try {
     await api("/api/appointments", {
       method: "POST",
-      body: JSON.stringify({ slotId: $("#slot").value })
+      body: JSON.stringify({ periodScheduleId: $("#period-schedule").value })
     });
     closeDialog("#schedule-dialog");
     toast("Agendamento registrado.");
@@ -411,22 +450,20 @@ async function loadVaccines() {
   try {
     const result = await api("/api/vaccines");
     $("#vaccine-list").innerHTML = result.vaccines.length
-      ? result.vaccines.map((vaccine) =>
-        '<article class="vaccine-card"><h3>' + escapeHtml(vaccine.name) +
-        "</h3><p>" + escapeHtml(vaccine.description) + "</p><p><b>Indicação:</b> " +
-        escapeHtml(vaccine.targetGroup) + "</p><p><b>Doses:</b> " +
-        escapeHtml(vaccine.doses) + "</p></article>"
+      ? result.vaccines.map(vaccine =>
+        '<article class="vaccine-card">' + (vaccine.imageData ? '<img class="campaign-image" src="' + vaccine.imageData + '" alt="Imagem informativa de ' + escapeHtml(vaccine.name) + '">' : '') +
+        '<h3>' + escapeHtml(vaccine.name) + '</h3><p>' + escapeHtml(vaccine.description) + '</p><p><b>Indicação:</b> ' +
+        escapeHtml(vaccine.targetGroup) + '</p><p><b>Doses:</b> ' + escapeHtml(vaccine.doses) + '</p></article>'
       ).join("")
       : '<p class="muted">Vacinas ainda não cadastradas pela unidade.</p>';
-
     $("#calendar-list").innerHTML = result.calendar.length
-      ? result.calendar.map((event) =>
-        '<div class="event-item"><b>' + escapeHtml(event.title) + "</b><small>" +
-        new Date(event.startsAt).toLocaleDateString("pt-BR") + " · " +
-        escapeHtml(event.unit) + "</small><p>" + escapeHtml(event.description) +
-        "</p></div>"
+      ? result.calendar.map(event =>
+        '<div class="event-item">' + (event.imageData ? '<img class="campaign-image" src="' + event.imageData + '" alt="Imagem da campanha ' + escapeHtml(event.title) + '">' : '') +
+        '<b>' + escapeHtml(event.title) + '</b><small>' + new Date(event.startsAt).toLocaleDateString("pt-BR") + ' a ' +
+        (event.endsAt ? new Date(event.endsAt).toLocaleDateString("pt-BR") : 'data não informada') + ' · ' +
+        escapeHtml(event.unit) + '</small><p>' + escapeHtml(event.description) + '</p></div>'
       ).join("")
-      : '<p class="muted">Nenhuma campanha cadastrada. Consulte sua unidade.</p>';
+      : '<p class="muted">Nenhuma campanha ativa neste momento. Consulte sua unidade.</p>';
     initScrollReveal();
   } catch {
     $("#vaccine-list").textContent = "Não foi possível carregar as informações.";

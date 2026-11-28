@@ -756,3 +756,122 @@ input:focus, select:focus, .staff-form textarea:focus {
 }
 
 .admin-sidebar[hidden],.admin-menu-toggle[hidden]{display:none!important}
+
+
+/* Organização por grupos no menu administrativo */
+.admin-nav-group{display:block;padding:13px 10px 4px;color:#82949a;font-size:10px;font-weight:800;letter-spacing:.09em}
+.admin-sidebar-nav a{min-height:42px}
+.admin-sidebar-nav a span{display:inline-grid;place-items:center;width:20px;height:20px;flex:0 0 20px}
+.admin-sidebar-nav a[href="#vaccine-area"] span{font-size:15px}
+.campaign-image{display:block;width:100%;max-width:420px;max-height:190px;object-fit:cover;border-radius:12px;margin:8px 0 12px;border:1px solid #e4eeec}
+.reschedule-panel{display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid #dce9e7;border-radius:12px;background:#f7fbfa}
+.reschedule-panel[hidden]{display:none}
+.reschedule-panel label{display:grid;gap:5px;font-size:12px;font-weight:700;color:#48616b}
+.reschedule-panel input,.reschedule-panel select{width:100%;min-height:42px;padding:9px 11px;border:1px solid #d4e1df;border-radius:9px;background:#fff;color:#203941}
+#vaccine-area{scroll-margin-top:22px}
+@media(max-width:900px){.admin-nav-group{grid-column:1/-1}.admin-sidebar-nav{gap:5px 8px}}
+
+
+/* Painel administrativo: navegação por telas e menu gaveta no celular */
+.admin-shell{grid-template-columns:248px minmax(0,1fr);align-items:start}
+.admin-sidebar{grid-column:1;grid-row:2;align-self:start;max-height:calc(100vh - 36px);overflow:auto}
+.admin-content{grid-column:2;grid-row:2;display:block;min-width:0}
+.admin-view[hidden],#admin-view-vaccines[hidden]{display:none!important}
+.admin-view:not([hidden]){display:block;animation:adminViewIn .2s ease}
+.admin-view>.staff-form,.admin-view>section.staff-form{margin:0}
+.admin-menu-backdrop{display:none}
+@keyframes adminViewIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){
+ .admin-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+ .admin-shell>.admin-page-title{grid-column:1}
+ .admin-menu-toggle{display:inline-flex;grid-column:1;justify-self:start;gap:10px}
+ .admin-menu-label{display:inline}
+ .admin-sidebar{display:flex;flex-direction:column;position:fixed;z-index:10002;top:0;bottom:0;left:0;width:min(310px,86vw);height:100dvh;max-height:100dvh;overflow-y:auto;border-radius:0 18px 18px 0;box-shadow:12px 0 40px rgba(12,35,43,.16);transform:translateX(-105%);visibility:hidden;transition:transform .28s ease,visibility .28s ease}
+ .admin-sidebar.open{display:flex;transform:translateX(0);visibility:visible}
+ .admin-sidebar-nav{display:flex;flex-direction:column;gap:5px}
+ .admin-nav-group{padding:14px 10px 4px}
+ .admin-content{grid-column:1;grid-row:auto}
+ .admin-menu-backdrop{display:block;position:fixed;inset:0;z-index:10001;background:rgba(12,35,43,.42);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
+ .admin-menu-backdrop.show{opacity:1;visibility:visible}
+}
+@media(min-width:901px){.admin-menu-toggle,.admin-menu-backdrop{display:none!important}.admin-sidebar{transform:none!important;visibility:visible!important}}
+
+
+/* Refinamento visual do painel ADM */
+.admin-shell{grid-template-columns:260px minmax(0,1fr);column-gap:24px;row-gap:18px}
+.admin-page-title{font-size:clamp(23px,3vw,30px);font-weight:800;letter-spacing:-.035em;color:#173943;padding:4px 0 13px;border-bottom:1px solid #e7efed}
+.admin-sidebar{background:linear-gradient(180deg,#fff 0%,#f9fcfb 100%);border:1px solid #dfeae8;border-radius:18px;padding:17px 12px;box-shadow:0 12px 30px rgba(22,57,67,.07)}
+.admin-sidebar-heading{padding:7px 9px 17px}
+.admin-sidebar-heading .brand-mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#d8f1ec,#e8f4fb);color:#087f80;font-size:15px}
+.admin-sidebar-heading b{font-size:14px;color:#183d46}
+.admin-sidebar-heading small{font-size:11px;color:#82949a}
+.admin-sidebar-nav{gap:4px;padding:13px 0}
+.admin-nav-group{padding:15px 11px 6px;color:#8a9b9f;font-size:9px;letter-spacing:.12em}
+.admin-sidebar-nav a{min-height:43px;padding:10px 12px;border-radius:11px;font-size:12px;color:#536b72;transition:background .18s ease,color .18s ease,transform .18s ease}
+.admin-sidebar-nav a span{font-size:16px;color:#56868a}
+.admin-sidebar-nav a:hover{background:#f0f7f5;transform:translateX(2px)}
+.admin-sidebar-nav a.active{background:#e6f4f1;color:#08777b;box-shadow:inset 3px 0 #0a8b87}
+.admin-sidebar-footer{margin-top:auto;color:#91a1a4;font-size:10px}
+.admin-content{min-width:0}
+.admin-view>.staff-form,.admin-view>section.staff-form{padding:25px;border:1px solid #e1ece9;border-radius:17px;background:#fff;box-shadow:0 8px 26px rgba(22,57,67,.045)}
+.admin-view h3{font-size:18px;letter-spacing:-.02em;color:#1d414a}
+.admin-view .muted{line-height:1.6}
+.admin-view .form-grid{gap:16px}
+.admin-view label{font-weight:650;color:#405c64}
+.admin-view input,.admin-view select{min-height:44px;border-radius:10px}
+.admin-view .button{min-height:43px;border-radius:10px;font-weight:700}
+.admin-menu-toggle{display:none}
+@media(max-width:900px){
+ .admin-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;gap:12px}
+ .admin-shell>.admin-page-title{grid-column:1;grid-row:1;align-self:center;margin:0;padding:5px 54px 13px 0;font-size:23px;line-height:1.2}
+ .admin-menu-toggle{display:inline-flex;grid-column:1;grid-row:1;justify-self:end;align-self:start;margin-top:0;width:44px;height:44px;min-height:44px;padding:0;justify-content:center;align-items:center;border-radius:13px;background:#fff;border:1px solid #dce8e5;color:#176e70;box-shadow:0 5px 16px rgba(24,61,70,.08);font-size:0}
+ .admin-menu-toggle span[aria-hidden="true"]{font-size:23px;line-height:1}
+ .admin-menu-label{display:none!important}
+ .admin-content{grid-column:1;grid-row:3}
+ .admin-sidebar{padding:18px 14px}
+ .admin-view>.staff-form,.admin-view>section.staff-form{padding:19px;border-radius:14px}
+}
+@media(max-width:480px){
+ .admin-shell>.admin-page-title{font-size:21px}
+ .admin-menu-toggle{width:42px;height:42px}
+ .admin-view>.staff-form,.admin-view>section.staff-form{padding:16px}
+}
+
+/* Organização das ações de profissionais e unidades no painel administrativo */
+.staff-person-card,.unit-admin-card{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.staff-person-info p{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 0}
+.staff-role-tag,.staff-status-tag,.staff-2fa-tag{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eef4f5;color:#35535c;font-size:12px;font-weight:700}
+.staff-status-tag.is-active{background:#e7f5ed;color:#17623b}.staff-status-tag.is-inactive{background:#fff0ed;color:#9b382b}
+.staff-person-actions,.unit-admin-actions,.unit-form-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.unit-admin-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.unit-doctors-title{margin:8px 0 0}.unit-doctor-list{display:grid;gap:8px}
+.unit-doctor-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f5f8f8;border:1px solid #e2ebeb;border-radius:9px}
+.unit-doctor-name{font-weight:600;font-size:14px}.button-small{min-height:36px;padding:7px 11px;font-size:12px;margin:0!important}
+.unit-admin-actions{padding-top:4px;border-top:1px solid #edf1f1}
+@media(max-width:650px){.unit-doctor-row{align-items:flex-start;flex-direction:column}.unit-doctor-row .button{width:100%}.unit-admin-heading{align-items:flex-start}.staff-person-actions .button{width:100%}}
+
+
+/* Localização simplificada das unidades: busca por endereço e mapa clicável */
+.unit-location-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:18px 0 10px;padding:15px;border:1px solid #dce9e7;border-radius:13px;background:#f7fbfa}.unit-location-tools b{color:#21454d}.unit-location-tools p{margin:4px 0 0;font-size:12px}.unit-location-map{width:100%;height:320px;border:1px solid #d9e5e3;border-radius:13px;overflow:hidden;background:#edf3f2;z-index:0}.unit-location-map .leaflet-control-attribution{font-size:9px}.unit-coordinates-details{margin:12px 0;padding:12px 14px;border:1px solid #e3ebea;border-radius:10px;background:#fbfdfd}.unit-coordinates-details summary{cursor:pointer;color:#526b72;font-size:12px;font-weight:700}.unit-coordinates-details .form-grid{margin-top:12px}.unit-coordinates-details #unit-capture-location{margin-top:10px}@media(max-width:600px){.unit-location-tools{align-items:stretch}.unit-location-tools .button{width:100%}.unit-location-map{height:280px}}
+
+.unit-map-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.unit-map-actions .button{white-space:nowrap}@media(max-width:600px){.unit-map-actions{display:grid;grid-template-columns:1fr}.unit-map-actions .button{width:100%}}
+
+
+/* Indicador global de operações para evitar a impressão de travamento */
+.operation-status{position:fixed;z-index:20000;left:50%;bottom:22px;transform:translate(-50%,14px);display:flex;align-items:center;gap:10px;max-width:calc(100vw - 28px);padding:12px 17px;border:1px solid #d8e7e4;border-radius:13px;background:#fff;color:#23464d;box-shadow:0 10px 32px rgba(18,52,60,.18);font-size:13px;font-weight:700;opacity:0;visibility:hidden;transition:opacity .2s ease,transform .2s ease,visibility .2s ease;pointer-events:none}
+.operation-status.is-visible{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.operation-status.is-loading{border-color:#b9dcd8}
+.operation-status.is-success{border-color:#b9dfc8;color:#17623b}
+.operation-status.is-error{border-color:#f0c7c1;color:#9b382b}
+.operation-spinner{width:17px;height:17px;flex:0 0 17px;border:2px solid #cfe5e2;border-top-color:#087f8c;border-radius:50%;animation:operationSpin .75s linear infinite}
+@keyframes operationSpin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.operation-status{bottom:14px;width:max-content;max-width:calc(100vw - 24px);font-size:12px;padding:11px 14px}}
+
+.weekday-picker{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px 18px;border:1px solid var(--border,#d8e2e7);border-radius:12px;padding:14px}
+.weekday-picker legend{font-weight:700;padding:0 6px}
+.weekday-picker label,.form-check-row{display:flex;align-items:center;gap:8px}
+.weekday-picker input,.form-check-row input{width:auto;min-height:auto}
+
+
+/* Segurança visual por perfil: não permitir que layouts com display sobrescrevam o atributo hidden. */
+#admin-area[hidden], #doctor-area[hidden], #vaccine-area[hidden] { display: none !important; }
