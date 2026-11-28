@@ -9,7 +9,7 @@ if(currentUser.role==="ADMIN"){
  $("#admin-area").hidden=false;
  if(!currentUser.twoFactorOn){
   $("#staff-select").innerHTML='<option value="'+currentUser.id+'">Minha conta administradora</option>';
-  document.querySelectorAll(".admin-view").forEach(v=>v.hidden=true);$("#admin-view-security").hidden=false;$("#admin-sidebar").hidden=true;$("#admin-menu-toggle").hidden=true;$("#admin-menu-toggle").hidden=true;
+  document.querySelectorAll(".admin-view").forEach(v=>v.hidden=true);$("#admin-view-security").hidden=false;$("#admin-sidebar").hidden=true;$("#admin-menu-toggle").hidden=true;
   $("#twofa-message").textContent="Antes de administrar o sistema, ative o segundo fator da sua própria conta.";
  }else{
   await Promise.all([loadStaff(),loadDoctors(),loadAdminAppointments(),loadUnits(),loadPeriods(),loadCampaigns()]);loadPeriodDoctors();showAdminView("overview");$("#vaccine-area").hidden=false;
