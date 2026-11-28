@@ -80,8 +80,9 @@ app.post("/api/admin/period-schedules",auth(),roles("ADMIN"),async(req,res)=>{
   const d=z.object({doctorId:z.string().uuid(),healthUnitId:z.string().uuid(),date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),period:periodSchema,startsAt:z.string().datetime(),endsAt:z.string().datetime(),specialty:z.string().trim().min(2).max(80),capacity:z.number().int().min(1).max(200)}).parse(req.body);
   const start=new Date(d.startsAt),end=new Date(d.endsAt),day=new Date(d.date+"T00:00:00.000Z");
   if(start<=new Date()||end<=start)return res.status(400).json({error:"Confira a data e o intervalo do período."});
-  const [doctor,unit,assignment]=await Promise.all([prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}})]);
+  const [doctor,unit,assignment,specialtyAssignment]=await Promise.all([prisma.user.findFirst({where:{id:d.doctorId,role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}),prisma.healthUnit.findFirst({where:{id:d.healthUnitId,active:true}}),prisma.healthUnitDoctor.findUnique({where:{healthUnitId_doctorId:{healthUnitId:d.healthUnitId,doctorId:d.doctorId}}}),prisma.doctorSpecialty.findFirst({where:{doctorId:d.doctorId,name:d.specialty}})]);
   if(!doctor||!unit||!assignment)return res.status(409).json({error:"Confira se o médico está ativo, com 2FA e vinculado à unidade ativa."});
+  if(!specialtyAssignment)return res.status(409).json({error:"Esta especialidade não está cadastrada no perfil do médico. Atualize as especialidades antes de publicar o período."});
   const unique={doctorId_healthUnitId_date_period:{doctorId:d.doctorId,healthUnitId:d.healthUnitId,date:day,period:d.period}};const existing=await prisma.doctorPeriodSchedule.findUnique({where:unique,include:{appointments:{where:{status:"SCHEDULED"},select:{id:true}}}});if(existing&&existing.appointments.length>d.capacity)return res.status(409).json({error:"A capacidade não pode ficar abaixo dos pacientes já agendados ("+existing.appointments.length+")."});const schedule=await prisma.doctorPeriodSchedule.upsert({where:unique,create:{...d,date:day,startsAt:start,endsAt:end},update:{startsAt:start,endsAt:end,specialty:d.specialty,capacity:d.capacity,active:true}});
   await log(req.user.id,"DOCTOR_PERIOD_SCHEDULE_SAVED","DoctorPeriodSchedule",schedule.id);
   res.status(201).json({schedule,message:"Período de atendimento publicado."});
@@ -166,8 +167,23 @@ app.delete("/api/admin/units/:id/doctors/:doctorId",auth(),roles("ADMIN"),async(
  res.json({message:"Vínculo removido."});
 });
 app.get("/api/admin/staff",auth(),roles("ADMIN"),async(q,s)=>{
- const staff=await prisma.user.findMany({where:{role:{in:["DOCTOR","NURSE","ADMIN"]}},select:{id:true,name:true,email:true,role:true,active:true,twoFactorOn:true},orderBy:{name:"asc"}});
+ const staff=await prisma.user.findMany({where:{role:{in:["DOCTOR","NURSE","ADMIN"]}},select:{id:true,name:true,email:true,role:true,active:true,twoFactorOn:true,doctorSpecialties:{select:{name:true,isPrimary:true},orderBy:{isPrimary:"desc"}}},orderBy:{name:"asc"}});
  s.json({staff});
+});
+app.patch("/api/admin/staff/:id/specialties",auth(),roles("ADMIN"),async(req,res)=>{
+ try{
+  const d=z.object({specialties:z.array(z.string().trim().min(2).max(80)).max(12)}).parse(req.body);
+  const names=[...new Set(d.specialties.map(x=>x.trim()).filter(Boolean))];
+  if(!names.length)return res.status(400).json({error:"Informe ao menos uma especialidade para o médico."});
+  const doctor=await prisma.user.findFirst({where:{id:req.params.id,role:"DOCTOR"}});
+  if(!doctor)return res.status(404).json({error:"Médico não encontrado."});
+  await prisma.$transaction(async tx=>{
+   await tx.doctorSpecialty.deleteMany({where:{doctorId:doctor.id}});
+   await tx.doctorSpecialty.createMany({data:names.map((name,index)=>({doctorId:doctor.id,name,isPrimary:index===0}))});
+  });
+  await log(req.user.id,"DOCTOR_SPECIALTIES_UPDATED","User",doctor.id);
+  res.json({message:"Especialidades atualizadas.",specialties:names.map((name,index)=>({name,isPrimary:index===0}))});
+ }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível atualizar as especialidades."})}
 });
 app.patch("/api/admin/staff/:id/status",auth(),roles("ADMIN"),async(req,res)=>{
  try{
@@ -185,10 +201,16 @@ app.patch("/api/admin/staff/:id/status",auth(),roles("ADMIN"),async(req,res)=>{
 });
 app.post("/api/admin/staff",auth(),roles("ADMIN"),async(req,res)=>{
  try{
-  const d=z.object({name:z.string().trim().min(3).max(100),email:z.string().email(),cpf:cpfSchema,phone:z.string().min(10).max(20),password:z.string().min(12).max(72),role:z.enum(["DOCTOR","NURSE"])}).parse(req.body);
+  const d=z.object({name:z.string().trim().min(3).max(100),email:z.string().email(),cpf:cpfSchema,phone:z.string().min(10).max(20),password:z.string().min(12).max(72),role:z.enum(["DOCTOR","NURSE"]),specialties:z.array(z.string().trim().min(2).max(80)).max(12).optional().default([])}).parse(req.body);
+  const specialties=[...new Set(d.specialties.map(x=>x.trim()).filter(Boolean))];
+  if(d.role==="DOCTOR"&&!specialties.length)return res.status(400).json({error:"Informe ao menos uma especialidade para o médico."});
   const email=d.email.toLowerCase();
   if(await prisma.user.findFirst({where:{OR:[{email},{cpf:d.cpf}]}}))return res.status(409).json({error:"E-mail ou CPF já cadastrado."});
-  const u=await prisma.user.create({data:{name:d.name,email,cpf:d.cpf,phone:d.phone,passwordHash:await bcrypt.hash(d.password,12),role:d.role}});
+  const u=await prisma.$transaction(async tx=>{
+   const created=await tx.user.create({data:{name:d.name,email,cpf:d.cpf,phone:d.phone,passwordHash:await bcrypt.hash(d.password,12),role:d.role}});
+   if(d.role==="DOCTOR")await tx.doctorSpecialty.createMany({data:specialties.map((name,index)=>({doctorId:created.id,name,isPrimary:index===0}))});
+   return created;
+  });
   await log(req.user.id,"STAFF_CREATED","User",u.id);
   res.status(201).json({staff:{id:u.id,name:u.name,email:u.email,role:u.role,twoFactorOn:false},message:"Profissional cadastrado. Configure o 2FA antes de liberar o acesso."});
  }catch(e){res.status(400).json({error:e.errors?.[0]?.message||"Não foi possível cadastrar o profissional."})}
