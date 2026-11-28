@@ -398,22 +398,20 @@ async function loadVaccines() {
   try {
     const result = await api("/api/vaccines");
     $("#vaccine-list").innerHTML = result.vaccines.length
-      ? result.vaccines.map((vaccine) =>
-        '<article class="vaccine-card"><h3>' + escapeHtml(vaccine.name) +
-        "</h3><p>" + escapeHtml(vaccine.description) + "</p><p><b>Indicação:</b> " +
-        escapeHtml(vaccine.targetGroup) + "</p><p><b>Doses:</b> " +
-        escapeHtml(vaccine.doses) + "</p></article>"
+      ? result.vaccines.map(vaccine =>
+        '<article class="vaccine-card">' + (vaccine.imageData ? '<img class="campaign-image" src="' + vaccine.imageData + '" alt="Imagem informativa de ' + escapeHtml(vaccine.name) + '">' : '') +
+        '<h3>' + escapeHtml(vaccine.name) + '</h3><p>' + escapeHtml(vaccine.description) + '</p><p><b>Indicação:</b> ' +
+        escapeHtml(vaccine.targetGroup) + '</p><p><b>Doses:</b> ' + escapeHtml(vaccine.doses) + '</p></article>'
       ).join("")
       : '<p class="muted">Vacinas ainda não cadastradas pela unidade.</p>';
-
     $("#calendar-list").innerHTML = result.calendar.length
-      ? result.calendar.map((event) =>
-        '<div class="event-item"><b>' + escapeHtml(event.title) + "</b><small>" +
-        new Date(event.startsAt).toLocaleDateString("pt-BR") + " · " +
-        escapeHtml(event.unit) + "</small><p>" + escapeHtml(event.description) +
-        "</p></div>"
+      ? result.calendar.map(event =>
+        '<div class="event-item">' + (event.imageData ? '<img class="campaign-image" src="' + event.imageData + '" alt="Imagem da campanha ' + escapeHtml(event.title) + '">' : '') +
+        '<b>' + escapeHtml(event.title) + '</b><small>' + new Date(event.startsAt).toLocaleDateString("pt-BR") + ' a ' +
+        (event.endsAt ? new Date(event.endsAt).toLocaleDateString("pt-BR") : 'data não informada') + ' · ' +
+        escapeHtml(event.unit) + '</small><p>' + escapeHtml(event.description) + '</p></div>'
       ).join("")
-      : '<p class="muted">Nenhuma campanha cadastrada. Consulte sua unidade.</p>';
+      : '<p class="muted">Nenhuma campanha ativa neste momento. Consulte sua unidade.</p>';
     initScrollReveal();
   } catch {
     $("#vaccine-list").textContent = "Não foi possível carregar as informações.";
