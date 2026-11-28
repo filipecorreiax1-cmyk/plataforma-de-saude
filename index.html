@@ -195,13 +195,14 @@
     <dialog id="schedule-dialog" aria-labelledby="schedule-title">
         <form id="schedule-form"><button class="dialog-close" type="button" data-close aria-label="Fechar">×</button>
             <span class="eyebrow">Novo atendimento</span><h2 id="schedule-title">Agendar consulta</h2>
-            <p class="muted">Escolha a unidade e veja os horários cadastrados pela equipe.</p>
+            <p class="muted">Escolha o dia, o médico e o período de atendimento. Não há horário individual marcado.</p>
             <label for="schedule-unit">Unidade de saúde</label><select id="schedule-unit" required><option value="">Selecione</option></select>
             <label for="schedule-specialty">Especialidade</label><select id="schedule-specialty" required disabled><option value="">Selecione primeiro a unidade</option></select>
             <label for="doctor">Profissional</label><select id="doctor" required disabled><option value="">Selecione primeiro a especialidade</option></select>
-            <label for="schedule-period">Período de preferência</label><select id="schedule-period"><option value="any">Qualquer período</option><option value="morning">Manhã</option><option value="afternoon">Tarde</option></select>
-            <label for="slot">Escolha o horário da consulta</label><select id="slot" required><option value="">Selecione primeiro o profissional</option></select>
-            <p class="location-note">Os horários exibidos correspondem ao período escolhido. Selecione um para confirmar sua consulta.</p>
+            <label for="schedule-date">Dia do atendimento</label><input id="schedule-date" type="date" required>
+            <label for="schedule-period">Período de preferência</label><select id="schedule-period" required><option value="MORNING">Manhã</option><option value="AFTERNOON">Tarde</option><option value="EVENING">Noite</option></select>
+            <label for="period-schedule">Disponibilidade do médico</label><select id="period-schedule" required><option value="">Selecione unidade, especialidade, médico e dia</option></select>
+            <p class="location-note">A reserva é para o período de atendimento, não para um horário exato. O posto organiza o atendimento presencial conforme sua rotina e capacidade.</p>
             <p id="schedule-error" class="form-error" role="alert"></p><button class="button button-primary full" type="submit">Confirmar solicitação</button>
         </form>
     </dialog>
