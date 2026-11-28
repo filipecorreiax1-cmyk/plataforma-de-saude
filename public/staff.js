@@ -1,5 +1,23 @@
 const $=s=>document.querySelector(s);
-const api=async(u,o={})=>{const r=await fetch(u,{...o,credentials:"same-origin",headers:{"Content-Type":"application/json",...(o.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Não foi possível concluir.");return d};
+let operationCount=0,operationHideTimer=null;
+function showOperationStatus(message,state="loading"){
+ let node=document.querySelector("#operation-status");
+ if(!node){node=document.createElement("div");node.id="operation-status";node.className="operation-status";node.setAttribute("role","status");node.setAttribute("aria-live","polite");document.body.appendChild(node)}
+ node.className="operation-status is-visible "+(state==="loading"?"is-loading":state==="error"?"is-error":"is-success");
+ node.innerHTML=state==="loading"?'<span class="operation-spinner" aria-hidden="true"></span><span>'+message+'</span>':'<span aria-hidden="true">'+(state==="error"?"!":"✓")+'</span><span>'+message+'</span>';
+}
+function startOperation(method){
+ operationCount++;if(operationHideTimer)clearTimeout(operationHideTimer);
+ const label=method==="POST"?"Criando / salvando...":method==="PATCH"?"Alterando...":method==="DELETE"?"Removendo...":"Processando...";
+ showOperationStatus(label,"loading");
+}
+function finishOperation(error){
+ operationCount=Math.max(0,operationCount-1);
+ if(operationCount>0)return;
+ showOperationStatus(error?"Não foi possível concluir. Confira a mensagem na tela.":"Concluído com sucesso.",error?"error":"success");
+ operationHideTimer=setTimeout(()=>{if(operationCount===0){const node=document.querySelector("#operation-status");node?.classList.remove("is-visible")}},1800);
+}
+const api=async(u,o={})=>{const method=(o.method||"GET").toUpperCase(),mutating=["POST","PATCH","PUT","DELETE"].includes(method);if(mutating)startOperation(method);try{const r=await fetch(u,{...o,credentials:"same-origin",headers:{"Content-Type":"application/json",...(o.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Não foi possível concluir.");if(mutating)finishOperation(false);return d}catch(error){if(mutating)finishOperation(true);throw error}};
 const toast=m=>{const t=$("#staff-toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3500)};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
