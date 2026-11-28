@@ -41,6 +41,7 @@ model User {
   auditEvents     AuditEvent[]
   availableSlots  ScheduleSlot[]
   healthUnitAssignments HealthUnitDoctor[]
+  doctorPeriodSchedules DoctorPeriodSchedule[]
 }
 
 model Appointment {
