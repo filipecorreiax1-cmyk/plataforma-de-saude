@@ -44,8 +44,8 @@ app.post("/api/admin/staff/:id/2fa/confirm",auth(),roles("ADMIN"),async(req,res)
  await log(req.user.id,"STAFF_2FA_ENABLED","User",staff.id);
  res.json({message:"Autenticação em duas etapas ativada."});
 });
-app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null},healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},select:{id:true,name:true}});s.json({doctors})});
-app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}}}},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
+app.get("/api/staff/doctors",async(q,s)=>{const now=new Date();const doctors=await prisma.user.findMany({where:{role:"DOCTOR",active:true,twoFactorOn:true,twoFactorSecret:{not:null},healthUnitAssignments:{some:{healthUnit:{is:{active:true}}}},OR:[{availableSlots:{some:{isOpen:true,startsAt:{gt:now},healthUnit:{is:{active:true}}}}},{doctorPeriodSchedules:{some:{active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},healthUnit:{is:{active:true}},appointments:{none:{status:"SCHEDULED"}}}}}]},select:{id:true,name:true}});s.json({doctors})});
+app.get("/api/units",async(q,s)=>{try{const now=new Date();const units=await prisma.healthUnit.findMany({where:{active:true,OR:[{scheduleSlots:{some:{isOpen:true,startsAt:{gt:now},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}}}},{periodSchedules:{some:{active:true,date:{gte:new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z")},doctor:{is:{active:true,twoFactorOn:true,twoFactorSecret:{not:null}}}}}}]},select:{id:true,name:true,municipality:true},orderBy:[{municipality:"asc"},{name:"asc"}]});s.json({units});}catch(e){s.status(500).json({error:"Não foi possível carregar as unidades disponíveis."});}});
 app.get("/api/staff/slots",async(req,res)=>{
  const doctorId=String(req.query.doctorId||"");
  if(!doctorId)return res.status(400).json({error:"Informe o profissional."});
@@ -86,6 +86,7 @@ app.patch("/api/appointments/:id/period",auth(),roles("PATIENT"),async(req,res)=
    const appointment=await tx.appointment.findUnique({where:{id:req.params.id}});
    if(!appointment||appointment.patientId!==req.user.id)throw Object.assign(new Error("Agendamento não encontrado."),{status:404});
    if(appointment.status!=="SCHEDULED")throw Object.assign(new Error("Este agendamento não está ativo."),{status:409});
+   await tx.$queryRaw`SELECT "id" FROM "DoctorPeriodSchedule" WHERE "id" = ${periodScheduleId} FOR UPDATE`;
    const target=await tx.doctorPeriodSchedule.findUnique({where:{id:periodScheduleId},include:{appointments:{where:{status:"SCHEDULED"},select:{id:true}}}});
    if(!target||!target.active||target.appointments.length>=target.capacity||target.date<new Date(new Date().toISOString().slice(0,10)+"T00:00:00.000Z"))throw Object.assign(new Error("Este período não possui mais disponibilidade."),{status:409});
    if(target.doctorId!==appointment.doctorId||target.healthUnitId!== (await tx.doctorPeriodSchedule.findUnique({where:{id:appointment.periodScheduleId}}))?.healthUnitId)throw Object.assign(new Error("A troca deve ser para outro período do mesmo médico e unidade."),{status:400});
@@ -191,6 +192,7 @@ app.post("/api/appointments",auth(),roles("PATIENT"),async(req,res)=>{
   const input=d.parse(req.body);
   const a=await prisma.$transaction(async tx=>{
    if(input.periodScheduleId){
+    await tx.$queryRaw`SELECT "id" FROM "DoctorPeriodSchedule" WHERE "id" = ${input.periodScheduleId} FOR UPDATE`;
     const schedule=await tx.doctorPeriodSchedule.findUnique({where:{id:input.periodScheduleId},include:{appointments:{where:{status:"SCHEDULED"},select:{id:true}}}});
     if(!schedule||!schedule.active||schedule.startsAt<=new Date()||schedule.appointments.length>=schedule.capacity)throw Object.assign(new Error("Este período não está mais disponível."),{status:409});
     const unit=await tx.healthUnit.findUnique({where:{id:schedule.healthUnitId}});
